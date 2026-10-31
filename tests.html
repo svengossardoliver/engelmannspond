@@ -161,7 +161,10 @@ async function run(){
     EL('document.getElementById("tlCounter").value=""; syncTeacherLink();');
     check('…and hides it otherwise',EL('document.getElementById("tlWarn").hidden')===true);
     check('manual-only bench tells the student each count takes a real minute',(()=>{ EL('draw()'); return EL('(()=>{ let found=false; const o=ctx.fillText; ctx.fillText=function(t,...a){ if(/real minute/.test(t)) found=true; return o.call(this,t,...a); }; draw(); ctx.fillText=o; return found; })()'); })());
-    check('the help sheet says the data are not a substitute for an IA',/not a substitute for an IA/.test(EL('document.getElementById("helpDlg").textContent')));
+    check('the help sheet links the pre-lab worksheet',!!EL('document.querySelector("#helpDlg a[href=\'worksheet.html\']")'));
+    const ws=await fetch('worksheet.html').then(r=>r.ok?r.text():'');
+    check('worksheet.html is published, with student sections 1–5 and a teacher key',/What do you need\?/.test(ws)&&/5 · What did your list miss\?/.test(ws)&&/id="teacherKey"/.test(ws));
+        check('the help sheet says the data are not a substitute for an IA',/not a substitute for an IA/.test(EL('document.getElementById("helpDlg").textContent')));
     check('no script errors with a teacher link',(L.__errors||[]).length===0,(L.__errors||[]).join(' | '));
     // ---------- results table and SGL ----------
     E(`S.runs=[];S.nextId=1;

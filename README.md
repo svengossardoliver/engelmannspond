@@ -35,6 +35,10 @@ Worked solutions show the equation, the rearrangement, the substitution and the 
 
 For wavelength, the table and the SGL link give each LED's Δλ (half its FWHM) as that point's x uncertainty. Every count is logged with its conditions, including the tube, its position and how long the sprig had settled. The results table can treat each count as a trial, or each sprig's mean as a trial (the default with three tubes, since sprigs are the independent replicates). The results table groups ticked counts by the chosen independent variable, warns when a control variable drifted, and sends the table to SGL with ± 1 SD error bars. SGL's **Statistics** panel then runs the ANOVA or t-test.
 
+## Pre-lab worksheet
+
+`worksheet.html` is a print-ready worksheet, *What do you need?*, linked from the help sheet's teacher section. Students write their goal, variables and the equipment they expect to need before opening the lab, then highlight or cross out each item as the bench tour builds it, plan their counting time and reflect on what they missed. A teacher key (which equipment each guide needs, common misses, timing) prints on its own page; *Print student pages* leaves it out.
+
 ## Teacher set-up links
 
 The help sheet builds a link that fixes settings for a class:
