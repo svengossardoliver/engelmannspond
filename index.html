@@ -73,9 +73,9 @@ h3{font-size:14px;margin:20px 0 8px;color:var(--accent);letter-spacing:.02em}
 p{line-height:1.45;margin:6px 0;font-size:14px}
 .mute{color:var(--mute)}
 .mono{font-family:var(--mono)}
-button.b{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;font:600 13px var(--ui);padding:7px 11px;cursor:pointer}
-button.b:hover{border-color:var(--accent)}
-button.b.pri{background:var(--accent);color:#1a1206;border-color:var(--accent)}
+button.b,a.b{display:inline-block;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;font:600 13px var(--ui);padding:7px 11px;cursor:pointer}
+button.b:hover,a.b:hover{border-color:var(--accent)}
+button.b.pri,a.b.pri{background:var(--accent);color:#1a1206;border-color:var(--accent)}
 button.b:disabled{opacity:.4;cursor:not-allowed}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
 .logwrap{overflow:auto;max-height:360px;border:1px solid var(--line);border-radius:10px}
@@ -193,6 +193,7 @@ footer{flex:none;padding:7px 18px;border-top:1px solid var(--line);color:var(--m
       <h4>The light</h4>
       <ul>
         <li>The LED head has nine colours. Each colour gives a different number of photons at the same brightness, so set the light with the <b>PAR</b> meter, not the dial.</li>
+        <li>No LED is monochromatic. The <b>SPECTROMETER</b> shows each LED’s band and reads its peak and FWHM. Use half the FWHM as the uncertainty Δλ in the wavelength.</li>
         <li><b>PAR</b> is photon flux, 400–700 nm, in µmol m⁻² s⁻¹. It cannot see far red (730 nm). <b>LUX</b> is brightness to the human eye, so it reads green far higher than red or blue.</li>
         <li>The lamp is not a point source: close up, halving the distance does not quite quadruple the light.</li>
         <li><b>ROOM LIGHTS</b> add a little white light. Turn them off for dim-light work.</li>
@@ -239,7 +240,7 @@ footer{flex:none;padding:7px 18px;border-top:1px solid var(--line);color:var(--m
       <h4>Data and SGL</h4>
       <ul>
         <li>The <b>count log</b> keeps every count. <b>Copy log as table</b> pastes into Excel or Word. <b>Clear log</b> starts again at Count 1.</li>
-        <li>The <b>results table</b> groups ticked counts by your independent variable and warns you when a control variable was not held constant.</li>
+        <li>The <b>results table</b> groups ticked counts by your independent variable and warns you when a control variable was not held constant. For wavelength it gives each LED’s Δλ (half its FWHM), which goes to SGL as that point’s x uncertainty.</li>
         <li><b>Open in SGL</b> sends the table to Strothoff Graphical Laboratories with ± 1 SD error bars. SGL's <b>Statistics</b> panel gives the t-test and one-way ANOVA.</li>
       </ul>
     </section>
@@ -319,28 +320,57 @@ const sdev=a=>{if(a.length<2)return NaN;const m=mean(a);return Math.sqrt(a.reduc
    - Light: non-rectangular hyperbola (θ = 0.85), so light and the "dark" factors
      (temperature, CO₂) co-limit the way Blackman described: at low light, raising
      T or CO₂ barely changes the rate; near saturation, they matter a lot.
-   - Wavelength: photons absorbed × quantum yield, per incident photon, relative
-     to deep red (660 nm). Elodea leaves are only two cells thick, so they absorb
-     green poorly and the green dip is deeper than for a land leaf.
+   - Wavelength: each LED emits a band, not one wavelength. Its effect is the
+     Elodea action spectrum (O₂ per incident photon) averaged over that band.
+     Elodea leaves are only two cells thick, so they absorb green poorly and the
+     green dip is deeper than for a land leaf.
    - Temperature: Q₁₀ ≈ 2 up to an optimum near 29 °C, then enzyme loss.
      Respiration keeps rising (Q₁₀ = 2). Warm water also releases dissolved gas.
    - CO₂: Michaelis–Menten in NaHCO₃ (% w/v) on top of the DIC in tap water,
      with slight inhibition above 1.5 %.
    - Some O₂ dissolves in the water before any bubble forms (threshold).
    ===================================================================== */
+/* ---- light spectra ----
+   No LED is monochromatic: each gives a band of wavelengths. The plant, the PAR meter and the lux meter
+   each respond to the whole band, so every quantity below is a sum over the LED's spectrum (1 nm steps). */
+const SPEC_L0=350, SPEC_L1=800, SPEC_N=SPEC_L1-SPEC_L0+1;
+const lerpTab=(tab,x)=>{ if(x<=tab[0][0]) return tab[0][1]; for(let i=1;i<tab.length;i++) if(x<=tab[i][0]){ const [a,fa]=tab[i-1],[b,fb]=tab[i]; return fa+(fb-fa)*(x-a)/(b-a); } return tab[tab.length-1][1]; };
+// Elodea's action spectrum for light of a single wavelength: O₂ per incident photon, relative to the best (≈ 665 nm).
+// Thin (two-cell) leaves let much of the green through, so the green trough is deep. Beyond 690 nm photosystem II
+// is driven poorly ("red drop").
+const ACTION=[[350,0.30],[380,0.50],[400,0.70],[420,0.80],[440,0.86],[460,0.86],[480,0.79],[500,0.66],[515,0.50],[530,0.36],[545,0.34],[560,0.40],[580,0.55],[600,0.72],[620,0.86],[640,0.95],[665,1.00],[680,0.93],[690,0.70],[700,0.38],[710,0.14],[720,0.05],[740,0.015],[800,0]];
+const actionAt=l=>lerpTab(ACTION,l);
+const parRespAt=l=>1/(1+Math.exp(-(l-395)/2.5))/(1+Math.exp((l-701)/2.5));   // quantum sensor: flat 400–700 nm, soft edges
+const Vlam=l=>1.019*Math.exp(-285.4*(l/1000-0.559)**2);                       // eye sensitivity V(λ) (CIE photopic, fitted)
+const luxAt=l=>683*Vlam(l)*119.6/l;                                             // lux per µmol m⁻² s⁻¹ of photons at λ (nm)
+// LED line shape: mostly Gaussian, with a little Lorentzian for realistic tails.
+function band(peak,fwhm){ const s=fwhm/2.3548, g=fwhm/2, out=new Float64Array(SPEC_N);
+  for(let i=0;i<SPEC_N;i++){ const x=SPEC_L0+i-peak; out[i]=0.88*Math.exp(-x*x/(2*s*s))+0.12/(1+(x/g)**2); } return out; }
+function normSpec(a){ let t=0; for(const v of a) t+=v; for(let i=0;i<a.length;i++) a[i]/=t; return a; }
+// White LED = blue chip + broad yellow phosphor.
+function specOf(L){ if(L.nm) return normSpec(band(L.nm,L.fwhm));
+  const chip=normSpec(band(452,20)), ph=normSpec(band(595,125)), out=new Float64Array(SPEC_N); for(let i=0;i<SPEC_N;i++) out[i]=0.22*chip[i]+0.78*ph[i]; return normSpec(out); }
+const weigh=(sp,f)=>{ let t=0; for(let i=0;i<SPEC_N;i++) t+=sp[i]*f(SPEC_L0+i); return t; };
+// What a spectrometer reads off a spectrum: the peak, and the full width at half maximum.
+function specPeakFWHM(sp){ let m=0,k=0; sp.forEach((v,i)=>{ if(v>m){m=v;k=i;} }); let a=k,b=k; while(a>0&&sp[a]>m/2) a--; while(b<SPEC_N-1&&sp[b]>m/2) b++;
+  const fa=a+(m/2-sp[a])/(sp[a+1]-sp[a]), fb=b-1+(sp[b-1]-m/2)/(sp[b-1]-sp[b]); return {peak:SPEC_L0+k, fwhm:fb-fa}; }
 const LEDS=[
-  {id:'violet', name:'Violet',   nm:405, css:'#a37bff', ppfd:520, eff:0.80, par:0.93, V:0.0012},
-  {id:'blue',   name:'Blue',     nm:450, css:'#4f8dff', ppfd:600, eff:0.84, par:0.99, V:0.045},
-  {id:'cyan',   name:'Cyan',     nm:500, css:'#35d0ff', ppfd:330, eff:0.63, par:1.00, V:0.33},
-  {id:'green',  name:'Green',    nm:530, css:'#4fe08a', ppfd:280, eff:0.43, par:1.00, V:0.80},
-  {id:'amber',  name:'Amber',    nm:590, css:'#ffb340', ppfd:160, eff:0.61, par:1.00, V:0.72},
-  {id:'red',    name:'Red',      nm:630, css:'#ff5a3c', ppfd:480, eff:0.89, par:1.00, V:0.28},
-  {id:'deepred',name:'Deep red', nm:660, css:'#d6203a', ppfd:560, eff:1.00, par:0.98, V:0.075},
-  {id:'farred', name:'Far red',  nm:730, css:'#7a1424', ppfd:380, eff:0.07, par:0.04, V:0.0004},
-  {id:'white',  name:'White',    nm:null,css:'#f4efe3', ppfd:450, eff:0.74, par:1.00, luxPer:74}
+  {id:'violet', name:'Violet',   nm:405, fwhm:15, css:'#a37bff', ppfd:520},
+  {id:'blue',   name:'Blue',     nm:450, fwhm:20, css:'#4f8dff', ppfd:600},
+  {id:'cyan',   name:'Cyan',     nm:500, fwhm:28, css:'#35d0ff', ppfd:330},
+  {id:'green',  name:'Green',    nm:530, fwhm:35, css:'#4fe08a', ppfd:280},
+  {id:'amber',  name:'Amber',    nm:590, fwhm:16, css:'#ffb340', ppfd:160},
+  {id:'red',    name:'Red',      nm:630, fwhm:18, css:'#ff5a3c', ppfd:480},
+  {id:'deepred',name:'Deep red', nm:660, fwhm:20, css:'#d6203a', ppfd:560},
+  {id:'farred', name:'Far red',  nm:730, fwhm:28, css:'#7a1424', ppfd:380},
+  {id:'white',  name:'White',    nm:null,fwhm:null,css:'#f4efe3', ppfd:450}
 ];
+// Per photon emitted: eff = O₂ yield (relative), par = fraction the PAR meter counts, luxPer = lux per µmol m⁻² s⁻¹.
+for(const L of LEDS){ L.spec=specOf(L); L.eff=weigh(L.spec,actionAt); L.par=weigh(L.spec,parRespAt); L.luxPer=weigh(L.spec,luxAt); L.meas=specPeakFWHM(L.spec); }
 const LEDMAP=Object.fromEntries(LEDS.map(l=>[l.id,l]));
-const luxPerUmol=L=>L.luxPer||683*L.V*119.6/L.nm;   // lux per µmol m⁻² s⁻¹ at that wavelength
+const luxPerUmol=L=>L.luxPer;
+// Δλ for a coloured LED: half its full width at half maximum, as read on the spectrometer (whole nm).
+const dLambda=id=>{ const L=LEDMAP[id]; return L.nm?Math.round(L.meas.fwhm/2):null; };
 const LAMP_A=4;            // cm: half-size of the LED array, so it is not a point source
 const D_MIN=5, D_MAX=60;   // cm, lamp face to tube centre
 // relative to 10 cm on the axis; y is the sideways offset of a tube from the lamp's axis (cm)
@@ -625,6 +655,7 @@ function tapDisplay(x,y,w,h,value,commit,dis,id){ hitRect(x,y,w,h,{disabled:dis,
 /* ---- layout (logical units) ---- */
 const LAY={
   clock:{x:16,y:16,w:236,h:150},
+  spec:{x:264,y:16,w:300,h:144},
   top:{x:574,y:16,w:292,h:140},
   rail:{x0:270,x1:870,y:246},
   tank:{x:884,y:24,w:176,h:300},
@@ -655,6 +686,7 @@ function draw(){
   ctx.fillStyle=mixHex('#101316','#2c343c',ROOMV); ctx.fillRect(0,LAY.rail.y+62,W,8);   // bench top
   const L=LAY;
   slot('clock',L.clock.x,L.clock.y,L.clock.w,L.clock.h,drawClock);
+  slot('spec',L.spec.x,L.spec.y,L.spec.w,L.spec.h,drawSpec);
   drawBeam();
   if(isBuilt('lamp')) drawRailAndLamp();
   drawTank();
@@ -745,6 +777,26 @@ function drawTube(t){
   ctx.restore();
   if(three) hitRect(tx-tw/2-2,surf,tw+4,ty1-surf,{tap:()=>selectTube(t),id:'tube'+t,disabled:S.man.running});
 }
+// Spectrometer: the selected LED's emission spectrum, with the band the PAR meter counts.
+function drawSpec(){
+  const b=LAY.spec, L=LEDMAP[S.led], sp=L.spec; moduleBox(b.x,b.y,b.w,b.h,'SPECTROMETER',L.css);
+  const x0=b.x+16, x1=b.x+b.w-16, y0=b.y+34, y1=b.y+114, X=l=>x0+(l-SPEC_L0)/(SPEC_L1-SPEC_L0)*(x1-x0);
+  rr(x0-2,y0-2,x1-x0+4,y1-y0+4,4); ctx.fillStyle='#06110b'; ctx.fill();
+  ctx.fillStyle='rgba(125,255,176,0.07)'; ctx.fillRect(X(400),y0,X(700)-X(400),y1-y0);   // PAR band
+  txt('PAR band',X(400)+4,y0+11,F(9.5,600),'#3f8f5f');
+  txt(L.nm?`λ ${L.meas.peak} nm · FWHM ${Math.round(L.meas.fwhm)} nm`:'blue chip + phosphor',b.x+b.w-14,b.y+23,MF(10,700),COL.lcd,'right');
+  ctx.strokeStyle='rgba(125,255,176,0.08)'; ctx.lineWidth=1;
+  for(let l=400;l<=800;l+=100){ ctx.beginPath(); ctx.moveTo(X(l),y0); ctx.lineTo(X(l),y1); ctx.stroke(); txt(l===800?'800 nm':String(l),l===800?x1:X(l),y1+13,MF(10,600),COL.mute,l===800?'right':'center'); }
+  let m=0; for(const v of sp) m=Math.max(m,v);
+  const on=S.bright>0;
+  ctx.beginPath(); ctx.moveTo(X(SPEC_L0),y1);
+  for(let i=0;i<SPEC_N;i+=2) ctx.lineTo(X(SPEC_L0+i),y1-(sp[i]/m)*(y1-y0-6)*(on?1:0.02));
+  ctx.lineTo(X(SPEC_L1),y1); ctx.closePath();
+  ctx.save(); ctx.globalAlpha=0.35; ctx.fillStyle=L.css; ctx.fill(); ctx.restore(); ctx.strokeStyle=L.css; ctx.lineWidth=1.5; ctx.stroke();
+  if(L.nm&&on){ const yh=y1-(y1-y0-6)/2, fw=L.meas.fwhm; ctx.strokeStyle=COL.lcd; ctx.lineWidth=1; ctx.setLineDash([3,2]);
+    ctx.beginPath(); ctx.moveTo(X(L.meas.peak-fw/2),yh); ctx.lineTo(X(L.meas.peak+fw/2),yh); ctx.stroke(); ctx.setLineDash([]); }
+  if(!on) txt('lamp off',X(575),(y0+y1)/2+4,F(11,600),COL.mute,'center');
+}
 // Top view of the row of tubes: shows positions and which tube is selected.
 function drawTop(){
   const b=LAY.top; moduleBox(b.x,b.y,b.w,b.h,'TOP VIEW · ROW OF TUBES',COL.water);
@@ -765,18 +817,19 @@ function drawTop(){
 function drawLampModule(){
   const b=LAY.lamp, lk=locked(); moduleBox(b.x,b.y,b.w,b.h,'LAMP',LEDMAP[S.led].css);
   const bw=(b.w-28-12)/3, bh=30;
-  LEDS.forEach((L,i)=>{ const x=b.x+14+(i%3)*(bw+6), y=b.y+38+Math.floor(i/3)*(bh+6);
+  txt('PEAK WAVELENGTH  λ / nm',b.x+14,b.y+50,F(11,700),COL.mute);
+  LEDS.forEach((L,i)=>{ const x=b.x+14+(i%3)*(bw+6), y=b.y+58+Math.floor(i/3)*(bh+6);
     button(x,y,bw,bh,L.nm?String(L.nm):'WHITE',{active:S.led===L.id,color:L.css,dark:'#111',disabled:lk,onTap:()=>setLed(L.id),font:MF(12,700),id:'led-'+L.id});
     ctx.beginPath(); ctx.arc(x+9,y+9,3.5,0,7); ctx.fillStyle=L.css; ctx.fill(); });
-  txt(LEDMAP[S.led].name+(LEDMAP[S.led].nm?' · peak '+LEDMAP[S.led].nm+' nm':' · 4000 K'),b.x+14,b.y+160,F(12,600),COL.mute);
-  txt('BRIGHTNESS',b.x+14,b.y+190,F(11,700),COL.mute);
-  knob(b.x+52,b.y+238,30,S.bright/100,LEDMAP[S.led].css,s=>setBright(S.bright+s),lk);
-  lcdU(b.x+104,b.y+218,b.w-118,38,String(S.bright),'%',{tap:true});
-  tapDisplay(b.x+104,b.y+218,b.w-118,38,String(S.bright),v=>setBright(v),lk,'bright');
-  txt('DISTANCE  d',b.x+14,b.y+294,F(11,700),COL.mute);
-  lcdU(b.x+104,b.y+278,b.w-118,38,S.dist.toFixed(1),'cm',{tap:true});
-  tapDisplay(b.x+104,b.y+278,b.w-118,38,S.dist.toFixed(1),v=>setDist(v),lk,'dist');
-  txt('or drag the lamp',b.x+14,b.y+312,F(11,500),COL.mute);
+  txt(LEDMAP[S.led].name+(LEDMAP[S.led].nm?' LED · λ = '+LEDMAP[S.led].nm+' nm':' LED · 4000 K, no single λ'),b.x+14,b.y+176,F(12,600),COL.mute);
+  txt('BRIGHTNESS',b.x+14,b.y+198,F(11,700),COL.mute);
+  knob(b.x+52,b.y+246,30,S.bright/100,LEDMAP[S.led].css,s=>setBright(S.bright+s),lk);
+  lcdU(b.x+104,b.y+226,b.w-118,38,String(S.bright),'%',{tap:true});
+  tapDisplay(b.x+104,b.y+226,b.w-118,38,String(S.bright),v=>setBright(v),lk,'bright');
+  txt('DISTANCE  d',b.x+14,b.y+300,F(11,700),COL.mute);
+  lcdU(b.x+104,b.y+284,b.w-118,38,S.dist.toFixed(1),'cm',{tap:true});
+  tapDisplay(b.x+104,b.y+284,b.w-118,38,S.dist.toFixed(1),v=>setDist(v),lk,'dist');
+  txt('or drag the lamp',b.x+14,b.y+318,F(11,500),COL.mute);
 }
 function drawSolModule(){
   const b=LAY.sol, lk=locked(), bz=busy(); moduleBox(b.x,b.y,b.w,b.h,'SOLUTION',COL.water);
@@ -859,6 +912,8 @@ const TOUR_P=[
   {key:null,title:'Your bench',text:'A short sprig of Elodea, cut end up, in a tube of water inside a glass tank. In light it gives off oxygen, which leaves the cut end as bubbles. <b>1 TUBE</b> or <b>3 TUBES</b> at the top sets how many sprigs you test at once. You will add each piece of equipment yourself. Press <b>Next</b> to begin.'},
   {key:'lamp',title:'LED lamp',text:'Nine LED colours, from violet (405 nm) to far red (730 nm), plus white. Set the <b>BRIGHTNESS</b> with the knob or by typing, and drag the lamp along the rail to change the distance d.',
     try:'Choose the 630 nm red LED.',done:()=>S.led==='red'},
+  {key:'spec',title:'Spectrometer',text:'It shows the spectrum of the selected LED. No LED gives one wavelength: each gives a band. The dashed line marks the <b>full width at half maximum</b> (FWHM). The shaded strip is the 400–700 nm band the PAR meter counts.',
+    try:'Choose the 530 nm LED and compare its width with the red one.',done:()=>S.led==='green'},
   {key:'sol',title:'Solution and sprig',text:'NaHCO₃ in the water supplies CO₂. The sprig uses it up, so <b>FRESH SOLUTION</b> refills it. Nine sprigs are ready in the tank. They differ, just as real plants do. <b>RECUT STEM</b> makes a new cut.',
     try:'Set NaHCO₃ to 1.00 %.',done:()=>S.nah===4},
   {key:'tubes',only3:true,title:'Three tubes',text:'Three tubes stand in a row across the beam, 2.5 cm apart, each with its own sprig and its own solution. Only the middle position is on the lamp’s axis, so the outer tubes get a little less light. Tap a tube to select it: the meters, the sprig controls and the manual counter follow the selected tube. <b>ROTATE</b> moves every tube one place.',
@@ -871,7 +926,7 @@ const TOUR_P=[
   {key:'clock',title:'Lab clock',text:'After any change the sprig needs a few minutes to settle. <b>×10</b> and <b>×30</b> speed up the wait. <b>ROOM LIGHTS</b> add a little white light: turn them off for dim-light work.'},
   {key:'panel',title:'Data, Guide and Predict',text:'<b>Data</b> logs every count and builds your results table for SGL. <b>Guide</b> walks you through full investigations: start with <b>Action spectrum</b>. <b>Predict</b> tests your understanding of limiting factors. Every sprig, bubble and minute is a little different, so counts scatter: that is why you repeat them and use statistics.'}
 ];
-const ALL_KEYS=['clock','lamp','sol','tubes','bath','meters','counter'];
+const ALL_KEYS=['clock','spec','lamp','sol','tubes','bath','meters','counter'];
 let TOUR=null, TOUR_RECT=null, tourSig='';
 function isBuilt(k){ return !TOUR||TOUR.built.has(k); }
 function startTour(){ closeHelp(); closeTypeBox(true); TOUR={list:TOUR_P.filter(st=>!st.only3||S.tubes===3),i:0,built:new Set(),flags:{}}; renderTourCard(); }
@@ -999,7 +1054,7 @@ function logTSV(){
 }
 /* ---- results table: group ticked counts by the independent variable ---- */
 const IVS={
-  nm:{label:'Wavelength',x:{name:'Wavelength',sym:'λ',unit:'nm',unc:'10',mode:'abs'},key:r=>LEDMAP[r.led].nm,fmt:v=>String(v),skip:r=>!LEDMAP[r.led].nm,skipMsg:'white-light counts are left out (white has no single wavelength)',origin:false,title:'Rate of bubble production by Elodea against wavelength of light'},
+  nm:{label:'Wavelength',x:{name:'Peak wavelength',sym:'λ',unit:'nm',unc:'',mode:'abs'},perX:v=>{ const L=LEDS.find(l=>l.nm===v); return L?dLambda(L.id):null; },key:r=>LEDMAP[r.led].nm,fmt:v=>String(v),skip:r=>!LEDMAP[r.led].nm,skipMsg:'white-light counts are left out (white has no single wavelength)',origin:false,title:'Rate of bubble production by Elodea against wavelength of light'},
   par:{label:'Light intensity (PAR)',x:{name:'Photon flux density',sym:'I',unit:'µmol m⁻² s⁻¹',unc:'3',mode:'pct'},key:r=>r.led+'|'+r.bright+'|'+r.dist+'|'+r.room,xval:rs=>Math.round(mean(rs.map(r=>r.par))),fmt:v=>String(v),title:'Rate of bubble production by Elodea against photon flux density'},
   dist:{label:'Lamp distance',x:{name:'Distance',sym:'d',unit:'cm',unc:'0.5',mode:'abs'},key:r=>r.dist,fmt:v=>v.toFixed(1),title:'Rate of bubble production by Elodea against lamp distance'},
   T:{label:'Temperature',x:{name:'Temperature',sym:'T',unit:'°C',unc:'0.1',mode:'abs'},key:r=>r.bathOn?r.setT:Math.round(r.T),xval:rs=>Math.round(mean(rs.map(r=>r.T))*10)/10,fmt:v=>v.toFixed(1),origin:false,title:'Rate of bubble production by Elodea against water temperature'},
@@ -1045,25 +1100,25 @@ function renderTable(){
   const bind=()=>{ $('#ivSel').onchange=e=>{S.iv=e.target.value;save();renderTable();}; const a=$('#aggSel'); if(a) a.onchange=e=>{S.agg=e.target.value;save();renderTable();refreshGuide(true);}; };
   if(!groups.length){ el.innerHTML=h+'<p class="mute">No ticked counts to group yet.</p>'; bind(); return; }
   const nT=Math.max(...groups.map(g=>g.trials.length)), col=agg==='sprig'?'S':'R';
-  const xh=`${I.x.sym} / ${I.x.unit} ± ${I.x.unc}${I.x.mode==='pct'?' %':''}`;
-  h+=`<div class="logwrap"><table class="dt"><tr><th>${esc(xh)}</th>${Array.from({length:nT},(_,i)=>`<th>${col}${i+1}</th>`).join('')}</tr>`;
-  for(const g of groups) h+=`<tr><td>${I.fmt(g.x)}</td>${Array.from({length:nT},(_,i)=>{ const t=g.trials[i]; return `<td${t&&agg==='sprig'?` title="sprig ${t.sp+1}: mean of ${t.n} count${t.n>1?'s':''}"`:''}>${t?fmtRate(t.v):''}</td>`; }).join('')}</tr>`;
+  const xh=I.perX?`${I.x.sym} / ${I.x.unit}`:`${I.x.sym} / ${I.x.unit} ± ${I.x.unc}${I.x.mode==='pct'?' %':''}`, dxh=I.perX?`Δ${I.x.sym} / ${I.x.unit}`:null;
+  h+=`<div class="logwrap"><table class="dt"><tr><th>${esc(xh)}</th>${dxh?`<th>${esc(dxh)}</th>`:''}${Array.from({length:nT},(_,i)=>`<th>${col}${i+1}</th>`).join('')}</tr>`;
+  for(const g of groups) h+=`<tr><td>${I.fmt(g.x)}</td>${dxh?`<td>± ${I.perX(g.x)}</td>`:''}${Array.from({length:nT},(_,i)=>{ const t=g.trials[i]; return `<td${t&&agg==='sprig'?` title="sprig ${t.sp+1}: mean of ${t.n} count${t.n>1?'s':''}"`:''}>${t?fmtRate(t.v):''}</td>`; }).join('')}</tr>`;
   const ns=groups.flatMap(g=>g.trials.map(t=>t.n));
-  h+=`</table></div><p class="mute" style="font-size:12px">${agg==='sprig'?`Each value is one sprig’s mean rate R = 60N / t, in bubbles min⁻¹ (${Math.min(...ns)===Math.max(...ns)?Math.min(...ns):Math.min(...ns)+'–'+Math.max(...ns)} count${Math.max(...ns)>1?'s':''} per sprig).`:'R = 60N / t, the rate in bubbles min⁻¹.'}${skipped.length?' Note: '+I.skipMsg+'.':''}${groups.some(g=>g.extra)?' Only the first 12 trials of a row are used.':''}</p>`;
+  h+=`</table></div><p class="mute" style="font-size:12px">${agg==='sprig'?`Each value is one sprig’s mean rate R = 60N / t, in bubbles min⁻¹ (${Math.min(...ns)===Math.max(...ns)?Math.min(...ns):Math.min(...ns)+'–'+Math.max(...ns)} count${Math.max(...ns)>1?'s':''} per sprig).`:'R = 60N / t, the rate in bubbles min⁻¹.'}${dxh?' Δλ is half the LED’s FWHM, from the spectrometer.':''}${skipped.length?' Note: '+I.skipMsg+'.':''}${groups.some(g=>g.extra)?' Only the first 12 trials of a row are used.':''}</p>`;
   const w=controlWarnings(iv,rs);
   h+=w.length?`<div class="note"><b>Check your controlled variables</b><br>${w.map(esc).join('<br>')}</div>`:'<p class="okn">✓ Controlled variables look constant across these counts.</p>';
   h+=`<div class="row">${groups.length<2?'<button class="b pri" disabled>Open in SGL ↗</button>':'<a class="b pri" id="openSGL" target="_blank" rel="noopener" href="'+SGL_URL+'" style="text-decoration:none">Open in SGL ↗</a>'}<button class="b" id="copyTab">Copy table</button></div>`;
   el.innerHTML=h; bind();
   const og=$('#openSGL'); if(og){ sglURL(iv).then(u=>{ og.href=u; }); og.onclick=()=>{ S.exported=true; save(); setTimeout(()=>refreshGuide(true),0); }; }
-  $('#copyTab').onclick=()=>{ const lines=[[xh,...Array.from({length:nT},(_,i)=>(agg==='sprig'?'Mean R per sprig / bubbles min⁻¹ (sprig ':'R / bubbles min⁻¹ (trial ')+(i+1)+')')].join('\t'),...groups.map(g=>[I.fmt(g.x),...g.trials.map(t=>fmtRate(t.v))].join('\t'))];
+  $('#copyTab').onclick=()=>{ const lines=[[xh,...(dxh?[dxh]:[]),...Array.from({length:nT},(_,i)=>(agg==='sprig'?'Mean R per sprig / bubbles min⁻¹ (sprig ':'R / bubbles min⁻¹ (trial ')+(i+1)+')')].join('\t'),...groups.map(g=>[I.fmt(g.x),...(dxh?[I.perX(g.x)]:[]),...g.trials.map(t=>fmtRate(t.v))].join('\t'))];
     Promise.resolve().then(()=>navigator.clipboard.writeText(lines.join('\n'))).then(()=>{$('#copyTab').textContent='Copied';setTimeout(()=>{const b=$('#copyTab'); if(b) b.textContent='Copy table';},1400);},()=>{$('#copyTab').textContent='Copy failed';}); };
 }
 function sglState(iv){
   const I=IVS[iv], {groups}=groupRuns(iv), nT=Math.max(1,...groups.map(g=>g.trials.length)), sp=aggMode()==='sprig';
   return { v:1, title:I.title+(sp?' (mean of each sprig)':''), showTitle:true, x:{...I.x},
     y:{name:sp?'Mean rate of bubble production per sprig':'Rate of bubble production',sym:'R',unit:'min⁻¹',unc:'',mode:'abs'},
-    trials:nT, spread:'sd', rows:groups.map(g=>({x:I.fmt(g.x), y:g.trials.map(t=>fmtRate(t.v))})),
-    perPoint:false, strict:false, linX:'none', linY:'none', fit:'none', maxmin:false, residuals:false, origin:I.origin!==false, tab:'raw' };
+    trials:nT, spread:'sd', rows:groups.map(g=>Object.assign({x:I.fmt(g.x), y:g.trials.map(t=>fmtRate(t.v))},I.perX?{dx:String(I.perX(g.x)),dy:''}:{})),
+    perPoint:!!I.perX, strict:false, linX:'none', linY:'none', fit:'none', maxmin:false, residuals:false, origin:I.origin!==false, tab:'raw' };
 }
 // ANOVA on the table exactly as SGL will see it (rows with at least two trials).
 function tableAnova(iv){ const gs=groupRuns(iv).groups.map(g=>g.trials.map(t=>Number(fmtRate(t.v)))).filter(a=>a.length>=2); return gs.length>=2?anova(gs):null; }
@@ -1134,7 +1189,12 @@ const GUIDE_A={
         cond:()=>S.led==='blue'&&Math.abs(readMeters().par-100)<=5},
       {id:'a4',type:'choice',prompt:()=>`With the blue LED at about 100 µmol m⁻² s⁻¹ the lux meter reads about ${Math.round(luxTrue({...cond(),room:false})/10)*10} lx. Set to the same PAR, the 530 nm green LED would read about ${Math.round(100*luxPerUmol(LEDMAP.green)/10)*10} lx. Why?`,
         options:['Lux is weighted to the human eye, which is most sensitive near 555 nm','The green LED gives out more photons','The PAR meter is wrong for green light','Green light is absorbed more by the water'],answer:0,
-        explain:()=>'<div class="model">The same number of photons looks much brighter to us when it is green. A lux meter copies the eye’s sensitivity curve V(λ), which peaks at 555 nm. So lux is the wrong measure of light for a plant.</div>'}
+        explain:()=>'<div class="model">The same number of photons looks much brighter to us when it is green. A lux meter copies the eye’s sensitivity curve V(λ), which peaks at 555 nm. So lux is the wrong measure of light for a plant.</div>'},
+      {id:'a18',type:'choice',prompt:'Look at the <b>SPECTROMETER</b> with the 530 nm LED selected. Why does the LED give a band of wavelengths rather than exactly 530 nm?',
+        options:['The electrons that give out the light have a spread of energies, so the photons do too. No real source is monochromatic.','The spectrometer is not precise enough to show a single wavelength.','The LED’s plastic lens adds other colours.','The LED is faulty: a good LED gives exactly 530 nm.'],answer:0,
+        explain:()=>'<div class="model">In an LED, light comes from electrons falling across the band gap of a semiconductor. The electrons have a spread of thermal energies (a few kT), and the material is not perfectly uniform, so the photons have a spread of energies E = hc / λ, and so a spread of wavelengths. More fundamentally, light emitted over a finite time always contains a spread of frequencies. Every real source, even a laser, has a linewidth.</div>'},
+      {id:'a19',type:'num',unit:'nm',prompt:'Read the FWHM of the 530 nm LED on the spectrometer. What uncertainty Δλ should you give for its wavelength?',
+        check:x=>{ const f=LEDMAP.green.meas.fwhm, d=f/2; return {ok:Math.abs(x-d)<=1.5,html:ws([['Equation','Δλ = FWHM / 2'],['Substitute',`Δλ = ${Math.round(f)} / 2`],['Evaluate',`Δλ = ${(Math.round(f)/2).toFixed(1)} ≈ ${Math.round(d)} nm`]])+'<p class="mute">Half the full width at half maximum is a common, defensible choice: most of the photons lie within it. The Data tab uses it as each LED’s x uncertainty.</p>'}; }}
     ]},
     {title:'3 · One careful measurement',items:[
       {id:'a5',type:'choice',prompt:'After you change the light, how long should you wait before counting?',
@@ -1157,12 +1217,16 @@ const GUIDE_A={
         progress:()=>{ const g=actionGroups(); return [...g.entries()].map(([k,a])=>S.tubes===3?`${LEDMAP[k].nm} nm: ${sprigsWith(a,3)} sprig${sprigsWith(a,3)===1?'':'s'} with 3+`:`${LEDMAP[k].nm} nm: ${a.length}`).join(' · ')||'none yet'; }},
       {id:'a9',type:'choice',prompt:'Try to set the 730 nm far-red LED to 100 µmol m⁻² s⁻¹ on the PAR meter. Even at 5 cm and 100 % it reads far less. Why?',
         options:['The PAR meter only responds from 400 to 700 nm, so it barely sees far red','The far-red LED is broken','Far-red photons are absorbed by the glass','Far red is not light'],answer:0,
-        explain:()=>'<div class="model">A quantum (PAR) sensor is built to cut off at 700 nm. The far-red LED gives plenty of photons, but most of them are invisible to the meter, so you cannot set it to “100” this way. Treat any 730 nm data with care, and say so in your evaluation.</div>'},
-      {id:'t6',type:'task',prompt:'In the <b>Data</b> tab, choose <b>Wavelength</b> as the independent variable and press <b>Open in SGL</b>. SGL plots the means with ± 1 SD error bars.',
+        explain:()=>'<div class="model">A quantum (PAR) sensor is built to cut off at 700 nm. The far-red LED gives plenty of photons, but most of them are invisible to the meter, so you cannot set it to “100” this way. Look at the spectrometer: what the PAR meter does see is the short-wavelength tail of the band, below 700 nm. Treat any 730 nm data with care, and say so in your evaluation.</div>'},
+      {id:'t6',type:'task',prompt:'In the <b>Data</b> tab, choose <b>Wavelength</b> as the independent variable and press <b>Open in SGL</b>. SGL plots the means with ± 1 SD error bars, and each LED’s Δλ as its x error bar.',
         cond:()=>!!S.exported},
       {id:'a10',type:'choice',prompt:'Which description fits a typical action spectrum for Elodea?',
         options:['High in blue and red, lowest in green, near zero in far red','Highest in green, because leaves look green','The same at every wavelength, if the photon flux is the same','Rising steadily from violet to far red'],answer:0,
-        explain:()=>'<div class="model">Chlorophylls absorb blue and red strongly and green weakly; leaves look green because they reflect and transmit it. Elodea leaves are only two cells thick, so they let a lot of green through. Photons beyond 700 nm drive photosystem II poorly, so far red does almost nothing on its own.</div>'}
+        explain:()=>'<div class="model">Chlorophylls absorb blue and red strongly and green weakly; leaves look green because they reflect and transmit it. Elodea leaves are only two cells thick, so they let a lot of green through. Photons beyond 700 nm drive photosystem II poorly, so far red does almost nothing on its own.</div>'},
+      {id:'a20',type:'choice',prompt:'Your green (530 nm) rate is not as low, compared with red, as published action spectra measured with a monochromator. Which reason is best?',
+        options:['The LED’s band reaches 510–550 nm, so it also delivers photons either side of the trough, where the plant uses light better: the measured dip is averaged and shallower.','Green light heats the water more.','The PAR meter over-reads green.','Elodea is unusually good at using green light.'],answer:0,
+        explain:()=>{ const t=actionAt(530), g=LEDMAP.green.eff, r=LEDMAP.deepred.eff, tr=actionAt(660);
+          return `<div class="model">Each point is the action spectrum averaged over the LED’s band. For this lab’s Elodea, light of exactly 530 nm gives ${(100*t/tr).toFixed(0)} % of the rate of 660 nm light, per photon. The 530 nm LED, with its ${Math.round(LEDMAP.green.meas.fwhm)} nm wide band, gives ${(100*g/r).toFixed(0)} % of the 660 nm LED. Wide bands blur sharp features: troughs come out shallower and steep edges (such as the drop beyond 680 nm) are smeared. Narrower sources, or a monochromator, reduce the effect but never remove it.</div>`; }}
     ]},
     {title:'5 · Statistics and evaluation',items:[
       {id:'a16',type:'choice',prompt:'You make 15 counts of <b>one</b> sprig under blue light. How many independent replicates of the plant’s response do you have?',

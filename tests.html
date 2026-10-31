@@ -54,7 +54,18 @@ async function run(){
     check('green rate is under 60 % of deep red at equal photon flux',at('green')<0.6*at('deepred'));
     check('far red alone gives almost nothing',at('farred')<1);
     check('lux per µmol: green is over 10 × deep red (660) and blue (450)',E('luxPerUmol(LEDMAP.green)')>10*E('luxPerUmol(LEDMAP.deepred)')&&E('luxPerUmol(LEDMAP.green)')>10*E('luxPerUmol(LEDMAP.blue)'));
-    check('lux per µmol for white LED is 74 (4000 K)',E('luxPerUmol(LEDMAP.white)')===74);
+    check('lux per µmol for the white LED is 55–90 (typical 4000 K white LED)',E('luxPerUmol(LEDMAP.white)')>55&&E('luxPerUmol(LEDMAP.white)')<90,E('luxPerUmol(LEDMAP.white)').toFixed(1));
+    // ---------- no LED is monochromatic ----------
+    check('every LED spectrum sums to 1 (photon fractions)',E('LEDS.every(L=>Math.abs(L.spec.reduce((a,b)=>a+b,0)-1)<1e-9)'));
+    check('the spectrometer reads each LED’s peak and FWHM within 1 nm',E('LEDS.filter(L=>L.nm).every(L=>Math.abs(L.meas.peak-L.nm)<=1&&Math.abs(L.meas.fwhm-L.fwhm)<=1)'),E('LEDS.filter(L=>L.nm).map(L=>L.nm+":"+L.meas.peak+"/"+L.meas.fwhm.toFixed(1)).join(" ")'));
+    check('Δλ = half the FWHM: 530 nm → 18 nm, 590 nm → 8 nm',E('dLambda("green")')===18&&E('dLambda("amber")')===8,E('dLambda("green")')+', '+E('dLambda("amber")'));
+    const gT=E('actionAt(530)/actionAt(660)'), gL=E('LEDMAP.green.eff/LEDMAP.deepred.eff');
+    check('the broad green LED makes the green dip look shallower than the true action spectrum',gL>gT+0.05,`true ${gT.toFixed(2)}, LED ${gL.toFixed(2)}`);
+    const fT=E('actionAt(730)'), fL=E('LEDMAP.farred.eff');
+    check('the 730 nm LED’s effect is more than its peak wavelength alone would give (band reaches shorter λ)',fL>1.5*fT,`true ${fT.toFixed(3)}, LED ${fL.toFixed(3)}`);
+    check('the PAR meter sees only the far-red LED’s tail (1–6 % of its photons)',E('LEDMAP.farred.par')>0.01&&E('LEDMAP.farred.par')<0.06,E('LEDMAP.farred.par').toFixed(3));
+    check('the PAR meter counts 95 % or more of every LED from 450 to 660 nm, and 85–95 % of the 405 nm LED (its band reaches below 400 nm)',E('LEDS.filter(L=>L.nm&&L.nm<700&&L.nm>420).every(L=>L.par>0.95)')&&E('LEDMAP.violet.par')>0.85&&E('LEDMAP.violet.par')<0.95,E('LEDS.filter(L=>L.nm).map(L=>L.par.toFixed(2)).join(" ")'));
+    check('white LED: blue chip and phosphor give two peaks',(()=>{ const sp=E('Array.from(LEDMAP.white.spec)'); const at=l=>sp[l-350]; return at(452)>at(500)&&at(595)>at(500); })());
     check('PAR meter sees under 10 % of far-red photons',E('parTrue({led:"farred",bright:100,dist:10,room:false})/lampPPFD({led:"farred",bright:100,dist:10})')<0.1);
     const ratio=E('geom(10)/geom(20)');
     check('lamp is not a point source: I(10 cm)/I(20 cm) between 3 and 3.9',ratio>3&&ratio<3.9,ratio.toFixed(2));
@@ -153,6 +164,7 @@ async function run(){
     check('results table groups by wavelength and leaves out white',gr.groups.length===2&&gr.groups[0].x===450&&gr.groups[1].x===530&&gr.skipped.length===1);
     const link=await E('sglURL("nm")'); const sg=await decodeLink(link);
     check('Open in SGL: wavelength on x, three trials, ± 1 SD',sg.x.unit==='nm'&&sg.trials===3&&sg.spread==='sd'&&sg.rows.length===2&&sg.rows[0].y.join()==='30.0,32.0,29.0'&&sg.fit==='none'&&sg.origin===false,JSON.stringify(sg.rows));
+    check('Open in SGL: each LED’s Δλ goes as its own x uncertainty (450 → ±10, 530 → ±18)',sg.perPoint===true&&sg.rows[0].dx==='10'&&sg.rows[1].dx==='18',JSON.stringify(sg.rows.map(r=>r.dx)));
     check('Open in SGL points at sisgraphicallaboratory.netlify.app',link.startsWith('https://sisgraphicallaboratory.netlify.app/#g='));
     check('controlled variables look constant for these counts',E('controlWarnings("nm",groupRuns("nm").rs).length')===0,E('controlWarnings("nm",groupRuns("nm").rs).join(" | ")'));
     E(`S.runs[0].par=140; S.runs[1].T=27.3;`);
@@ -165,7 +177,7 @@ async function run(){
     E('gstore().items={a1:{attempted:true},a2:{attempted:true},a3:{attempted:true}}; refreshGuide(true);');
     check('guide: set-up task ticks itself when the bench is ready',E('itemDone(findItem("t1"))')===true);
     check('guide: PAR task ticks at 100 ± 5',E('itemDone(findItem("t2"))')===true,E('readMeters(true).par'));
-    E('gstore().items.a4={attempted:true}; gstore().items.a5={attempted:true}; changed(); fastForward(200); startAuto(); fastForward(61); refreshGuide(true);');
+    E('gstore().items.a4={attempted:true}; gstore().items.a18={attempted:true}; gstore().items.a19={attempted:true}; gstore().items.a5={attempted:true}; changed(); fastForward(200); startAuto(); fastForward(61); refreshGuide(true);');
     check('guide: a settled 60 s count ticks the one-count task',E('itemDone(findItem("t3"))')===true);
     const R=E('rateOf(refOne())');
     check('guide: worked rate check accepts 60N/t',E(`findItem("a6").check(${R}).ok`)===true&&E(`findItem("a6").check(${R*1.2}).ok`)===false);
@@ -189,7 +201,7 @@ async function run(){
     E('setLed("red"); tourTick();');
     check('tour: the Try it ticks when done',/tc-try ok/.test(E('document.getElementById("tourCard").innerHTML')));
     E('endTour()');
-    check('tour: Skip or Finish builds the whole bench',E('["clock","lamp","sol","tubes","bath","meters","counter"].every(isBuilt)'));
+    check('tour: Skip or Finish builds the whole bench',E('["clock","spec","lamp","sol","tubes","bath","meters","counter"].every(isBuilt)'));
     E('setTubes(3); startTour();');
     check('tour: with three tubes it includes the Three tubes step',E('TOUR.list.some(s=>s.key==="tubes")')===true);
     E('endTour(); setTubes(1);');
