@@ -41,7 +41,7 @@ try {
   await tap('bright'); await app.keyboard.type('73');
   await tap('dist'); await app.keyboard.type('22');
   await tap('autoGo'); await app.waitForTimeout(200);
-  const st = await app.evaluate(() => ({ bright: S.bright, dist: S.dist, open: getComputedStyle(document.getElementById('typeBox')).display, running: S.auto.running, cb: S.auto.cond && S.auto.cond.bright, cd: S.auto.cond && S.auto.cond.dist }));
+  const st = await app.evaluate(() => ({ bright: S.bright, dist: S.dist, open: getComputedStyle(document.getElementById('typeBox')).display, running: S.auto.running, cb: S.auto.cond && S.auto.cond[0].bright, cd: S.auto.cond && S.auto.cond[0].dist }));
   const clickOk = st.bright === 73 && st.dist === 22 && st.open === 'none' && st.running && st.cb === 73 && st.cd === 22;
   results.push({ ok: clickOk, name: 'real clicks: typed values stick and are used by the count', detail: JSON.stringify(st) });
   console.log(`${clickOk ? 'PASS' : 'FAIL'}  real clicks: typed values stick and are used by the count  · ${JSON.stringify(st)}`);

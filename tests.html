@@ -14,6 +14,7 @@ iframe{position:absolute;left:-10000px;top:0;width:1400px;height:900px;border:0}
 <div id="sum">Running…</div>
 <pre id="out"></pre>
 <iframe id="f" src="index.html?test=1"></iframe>
+<iframe id="L" src="index.html?test=1&tubes=3&counter=manual&trials=sprig"></iframe>
 <script>
 const results=[];
 function check(name,ok,detail){ results.push({name,ok:!!ok,detail:detail==null?'':String(detail)}); }
@@ -57,6 +58,9 @@ async function run(){
     check('PAR meter sees under 10 % of far-red photons',E('parTrue({led:"farred",bright:100,dist:10,room:false})/lampPPFD({led:"farred",bright:100,dist:10})')<0.1);
     const ratio=E('geom(10)/geom(20)');
     check('lamp is not a point source: I(10 cm)/I(20 cm) between 3 and 3.9',ratio>3&&ratio<3.9,ratio.toFixed(2));
+    const off15=E('geom(15,2.5)/geom(15,0)'), off5=E('geom(5,2.5)/geom(5,0)');
+    check('a tube 2.5 cm off the axis gets less light: 2–7 % less at 15 cm',off15>0.93&&off15<0.98,off15.toFixed(3));
+    check('…and over 15 % less with the lamp at 5 cm',off5<0.85,off5.toFixed(3));
     // ---------- counting statistics ----------
     const st=E(`(()=>{ const r=mulberry32(5); const a=[]; for(let i=0;i<300;i++) a.push(simCount(30,60,r)); return a; })()`);
     const tn=st.map(x=>x.trueN), m=tn.reduce((a,b)=>a+b,0)/tn.length, v=tn.reduce((a,b)=>a+(b-m)**2,0)/(tn.length-1);
@@ -72,28 +76,66 @@ async function run(){
     const T2=E('welch([1,2,3,4,5],[2,4,6,8,10])');
     check('Welch t-test: t = −1.897, df = 5.882, p = 0.1075 (SciPy)',near(T2.t,-1.8973665961,1e-6)&&near(T2.df,5.882352941,1e-6)&&near(T2.p,0.1075311949,1e-5),`t ${T2.t} df ${T2.df} p ${T2.p}`);
     // ---------- the bench ----------
-    E('S.runs=[];S.nextId=1;S.led="blue";S.bright=60;S.dist=15;S.room=false;S.bathOn=true;S.setT=25;S.nah=4;S.C=1;S.sprig=0;');
+    E('S.runs=[];S.nextId=1;S.led="blue";S.bright=60;S.dist=15;S.room=false;S.bathOn=true;S.setT=25;S.nah=4;S.tube.forEach(t=>t.C=1);S.tube[0].sprig=0;');
     E('fastForward(900)');
     check('water bath reaches 25.0 °C within 15 min',near(E('S.T'),25,0.3),E('S.T').toFixed(2));
     E('setSprigIdx(1)'); E('fastForward(10)');
-    check('a new sprig starts slowly (rate after 10 s under 40 % of target)',E('S.rt.r')<0.4*E('targetRate()'),`${E('S.rt.r').toFixed(1)} vs ${E('targetRate()').toFixed(1)}`);
+    check('a new sprig starts slowly (rate after 10 s under 40 % of target)',E('S.tube[0].rt.r')<0.4*E('targetRate()'),`${E('S.tube[0].rt.r').toFixed(1)} vs ${E('targetRate()').toFixed(1)}`);
     E('fastForward(900)');
-    check('…and has settled after 15 min (within 5 %)',near(E('S.rt.r'),E('targetRate()'),0.05*E('targetRate()')));
-    E('setBright(80)'); check('a change resets the settling clock',near(E('S.clock-S.lastChange'),0,1e-9));
+    check('…and has settled after 15 min (within 5 %)',near(E('S.tube[0].rt.r'),E('targetRate()'),0.05*E('targetRate()')));
+    E('setBright(80)'); check('a change resets the settling clock',near(E('S.clock-S.tube[0].lastChange'),0,1e-9));
     E('fastForward(240)'); E('startAuto()');
     E('setBright(30)'); check('the lamp is locked while the automatic counter runs',E('S.bright')===80);
     E('fastForward(61)');
     const r1=E('S.runs[S.runs.length-1]');
     check('an automatic count is logged with its conditions',!!r1&&r1.kind==='auto'&&r1.bright===80&&r1.led==='blue'&&r1.t===60&&r1.settle>=239,JSON.stringify(r1));
     check('the logged count is plausible for the settled rate',r1&&Math.abs(r1.N-E('targetRate()'))<0.35*E('targetRate()')+3,`${r1&&r1.N} vs ${E('targetRate()').toFixed(1)}`);
-    E('S.C=1;'); E('fastForward(1800)');
-    check('the sprig uses up the NaHCO₃',E('S.C')<1);
-    E('freshSolution()'); check('FRESH SOLUTION refills it',E('S.C')===1);
+    E('S.tube[0].C=1;'); E('fastForward(1800)');
+    check('the sprig uses up the NaHCO₃',E('S.tube[0].C')<1);
+    E('freshSolution()'); check('FRESH SOLUTION refills it',E('S.tube[0].C')===1);
     E('setBath(false)'); E('setDist(5)'); E('setBright(100)'); E('S.T=21'); E('fastForward(1800)');
     check('without the bath, a close bright lamp warms the water by over 2 °C',E('S.T')>23,E('S.T').toFixed(2));
     E('setBath(true)'); E('setSetT(42)'); E('fastForward(1200)');
     const dmg=E('curSprig().dmg'); E('setSetT(25)'); E('fastForward(1200)');
     check('heat above 38 °C damages the sprig, and the damage stays',dmg>0.2&&E('curSprig().dmg')===dmg,dmg.toFixed(2));
+    // ---------- three tubes ----------
+    E('S.runs=[];S.nextId=1;setBath(true);setSetT(25);S.T=25;setDist(12);setBright(70);setTubes(3);');
+    check('3 TUBES: three tubes with three different sprigs',E('S.tubes')===3&&new Set(E('activeTubes().map(t=>t.sprig)')).size===3);
+    check('the middle position gets the most light',E('parTrue(condT(S.tube.findIndex(t=>t.pos===1)))')>E('parTrue(condT(S.tube.findIndex(t=>t.pos===0)))'));
+    E('fastForward(400); startAuto(); fastForward(61);');
+    const r3=E('S.runs');
+    check('one automatic count logs all three tubes, with their own sprig and position',r3.length===3&&r3.map(r=>r.tube).join()==='A,B,C'&&r3.map(r=>r.pos).join()==='1,2,3'&&new Set(r3.map(r=>r.sprig)).size===3&&r3.every(r=>r.tubes===3&&r.t===60),JSON.stringify(r3.map(r=>[r.tube,r.pos,r.sprig,r.N,r.par])));
+    check('each tube is counted by its own gate (counts differ)',new Set(r3.map(r=>r.N)).size>1,r3.map(r=>r.N).join());
+    E('selectTube(2); setSprigStep(1);');
+    check('the sprig controls skip sprigs already in another tube',new Set(E('activeTubes().map(t=>t.sprig)')).size===3);
+    const p0=E('S.tube.map(t=>t.pos)'); E('rotateTubes()');
+    check('ROTATE moves every tube one place and restarts settling',E('S.tube.map(t=>t.pos)').join()===p0.map(p=>(p+1)%3).join()&&E('S.tube.every(t=>t.lastChange===S.clock)'));
+    E('selectTube(1); fastForward(300); manStartStop(); for(let i=0;i<12;i++) tapBubble(); fastForward(60); manStartStop();');
+    const rm=E('S.runs[S.runs.length-1]');
+    check('a manual count is logged for the selected tube only',rm.kind==='manual'&&rm.tube==='B'&&rm.N===12&&near(rm.t,60,0.06)&&E('S.runs.length')===4,JSON.stringify(rm));
+    check('the tube switch is locked while a count runs',(()=>{ E('startAuto(); setTubes(1);'); const t=E('S.tubes'); E('stopAuto(false)'); return t===3; })());
+    check('with three tubes, each sprig’s mean is a trial by default',E('aggMode()')==='sprig');
+    E(`S.runs=[]; S.nextId=1;
+      for(const [sp,led,N] of [[0,'blue',30],[0,'blue',32],[1,'blue',24],[1,'blue',26],[2,'blue',36],[0,'green',14],[1,'green',12],[2,'green',16],[2,'green',18]]) addRun({kind:'auto',clock:0,led,bright:50,dist:15,room:false,bathOn:true,setT:25,tubes:3,tube:'A',pos:1,sprig:sp,cuts:1,nah:1,par:100,lux:1,T:25.0,settle:300,t:60,N});`);
+    const gs=E('groupRuns("nm").groups.map(g=>g.trials.map(t=>t.v))');
+    check('per-sprig trials: blue = 31, 25, 36 and green = 14, 12, 17',gs[0].join()==='31,25,36'&&gs[1].join()==='14,12,17',JSON.stringify(gs));
+    const sg3=await decodeLink(await E('sglURL("nm")'));
+    check('SGL gets one trial per sprig, labelled as sprig means',sg3.trials===3&&sg3.rows[0].y.join()==='31.0,25.0,36.0'&&/per sprig/.test(sg3.y.name),JSON.stringify(sg3.rows));
+    E('S.agg="count"; renderTable();');
+    check('switching to every count gives 4 trials for green',E('groupRuns("nm").groups[1].trials.length')===4);
+    E('S.agg=null; setTubes(1);');
+    check('back to 1 TUBE: one tube, every count a trial',E('S.tubes')===1&&E('aggMode()')==='count'&&E('S.sel')===0);
+    // ---------- teacher link ----------
+    const L=document.getElementById('L').contentWindow, EL=s=>L.eval(s);
+    for(let i=0;i<100&&!L.EP_READY;i++) await new Promise(r=>setTimeout(r,50));
+    EL('setTubes(1); startAuto();');
+    check('teacher link: tubes=3 cannot be switched off',EL('S.tubes')===3&&EL('document.querySelector("[data-tubes=\'1\']").disabled')===true);
+    check('teacher link: counter=manual stops the automatic counter',EL('S.auto.running')===false&&EL('HITS.some(h=>h.id==="autoGo")')===false);
+    check('teacher link: trials=sprig fixes the results table',(()=>{ EL('S.agg="count"'); return EL('aggMode()')==='sprig'; })());
+    check('teacher link: the header says what the teacher set',/3 tubes · manual counting · sprig means/.test(EL('document.getElementById("tlock").textContent')));
+    EL('document.getElementById("tlTubes").value="1"; document.getElementById("tlCounter").value="manual"; document.getElementById("tlTrials").value=""; syncTeacherLink();');
+    check('the help sheet builds a set-up link',/\?tubes=1&counter=manual$/.test(EL('document.getElementById("tlUrl").value')),EL('document.getElementById("tlUrl").value'));
+    check('no script errors with a teacher link',(L.__errors||[]).length===0,(L.__errors||[]).join(' | '));
     // ---------- results table and SGL ----------
     E(`S.runs=[];S.nextId=1;
       for(const [led,N] of [['blue',30],['blue',32],['blue',29],['green',14],['green',15],['green',13],['white',25]]) addRun({kind:'auto',clock:0,led,bright:50,dist:15,room:false,bathOn:true,setT:25,sprig:0,cuts:1,nah:1,par:led==='green'?100:101,lux:1,T:25.0,settle:300,t:60,N});
@@ -109,7 +151,7 @@ async function run(){
     check('…and are flagged when PAR and temperature were not held constant',wn.some(w=>/PAR/.test(w))&&wn.some(w=>/Temperature/.test(w)),wn.join(' | '));
     // ---------- guide ----------
     E('S.runs=[];S.nextId=1;S.guides={};setGuide("action");');
-    E('S.bathOn=true;S.setT=25;S.nah=4;S.C=1;S.room=false;S.T=25;S.led="blue";S.dist=15;S.sprig=0;');
+    E('S.bathOn=true;S.setT=25;S.nah=4;S.tube.forEach(t=>t.C=1);S.room=false;S.T=25;S.led="blue";S.dist=15;');
     E(`(()=>{ for(let b=0;b<=100;b++){ S.bright=b; if(Math.abs(readMeters(true).par-100)<=1) break; } })()`);
     E('gstore().items={a1:{attempted:true},a2:{attempted:true},a3:{attempted:true}}; refreshGuide(true);');
     check('guide: set-up task ticks itself when the bench is ready',E('itemDone(findItem("t1"))')===true);
@@ -138,11 +180,14 @@ async function run(){
     E('setLed("red"); tourTick();');
     check('tour: the Try it ticks when done',/tc-try ok/.test(E('document.getElementById("tourCard").innerHTML')));
     E('endTour()');
-    check('tour: Skip or Finish builds the whole bench',E('["clock","lamp","sol","bath","meters","counter"].every(isBuilt)'));
+    check('tour: Skip or Finish builds the whole bench',E('["clock","lamp","sol","tubes","bath","meters","counter"].every(isBuilt)'));
+    E('setTubes(3); startTour();');
+    check('tour: with three tubes it includes the Three tubes step',E('TOUR.list.some(s=>s.key==="tubes")')===true);
+    E('endTour(); setTubes(1);');
     // ---------- help sheet ----------
     check('test mode: the help sheet does not open by itself',E('document.getElementById("helpDlg").open')===false);
     E('openHelp()');
-    check('openHelp() opens the help sheet with 11 sections',E('document.getElementById("helpDlg").open')===true&&E('document.querySelectorAll("#helpDlg .help-body section").length')===11);
+    check('openHelp() opens the help sheet with 13 sections',E('document.getElementById("helpDlg").open')===true&&E('document.querySelectorAll("#helpDlg .help-body section").length')===13);
     E('closeHelp()');
     check('closeHelp() closes it',E('document.getElementById("helpDlg").open')===false);
     E('draw()');

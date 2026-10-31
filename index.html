@@ -23,7 +23,17 @@ header{display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:
 .brand .kicker{font:500 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--amber)}
 .brand h1{margin:2px 0 0;font-size:27px;font-weight:700;letter-spacing:-.01em}
 header .sub{color:var(--mute);font-size:13px;margin-left:auto}
-.helpbtn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px;font:700 13px var(--ui);padding:9px 14px;cursor:pointer;margin-left:28px}
+.expsw{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-left:28px}
+.expsw button{background:var(--panel2);color:var(--mute);border:0;font:700 12.5px var(--ui);letter-spacing:.06em;padding:9px 16px;cursor:pointer}
+.expsw button.on{background:var(--accent);color:#1a1206}
+.expsw button:disabled{opacity:.45;cursor:not-allowed}
+.expsw button.on:disabled{opacity:.8}
+.tlock{font:600 11.5px var(--mono);color:var(--warn);border:1px solid #4a4220;border-radius:7px;padding:5px 9px;margin-left:12px}
+.helpbtn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px;font:700 13px var(--ui);padding:9px 14px;cursor:pointer;margin-left:10px}
+.tl-grid{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;font-size:13px;margin:8px 0}
+.tl-grid select{width:100%}
+.tl-url{display:flex;gap:8px;align-items:center}
+.tl-url input{flex:1;min-width:0;font-size:11.5px}
 .helpbtn:hover{border-color:var(--accent)}
 dialog.help{max-width:860px;width:calc(100% - 48px);padding:0;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);max-height:88vh;flex-direction:column}
 dialog.help[open]{display:flex}
@@ -122,7 +132,9 @@ footer{flex:none;padding:7px 18px;border-top:1px solid var(--line);color:var(--m
 <body>
 <header>
   <div class="brand"><div class="kicker" id="collName">Strothoff Biology Laboratories</div><h1 id="appName">Engelmann's Pond</h1></div>
+  <div class="expsw" role="group" aria-label="Number of tubes"><button data-tubes="1">1 TUBE</button><button data-tubes="3">3 TUBES</button></div>
   <button class="helpbtn" id="btnHelp" title="How to use this lab">? Help</button>
+  <span class="tlock" id="tlock" hidden></span>
   <span class="sub">Photosynthesis lab · Elodea, LED lamp, bubble counting</span>
 </header>
 <main>
@@ -157,6 +169,7 @@ footer{flex:none;padding:7px 18px;border-top:1px solid var(--line);color:var(--m
     <section>
       <h4>Quick start</h4>
       <ol>
+        <li>Choose <b>1 TUBE</b> or <b>3 TUBES</b> at the top.</li>
         <li>Choose an LED colour in the <b>LAMP</b> module and set its <b>BRIGHTNESS</b>.</li>
         <li>Drag the lamp along the rail, or tap the distance display and type a value.</li>
         <li>Turn the <b>WATER BATH</b> on and wait until the thermometer reads the set temperature.</li>
@@ -173,7 +186,7 @@ footer{flex:none;padding:7px 18px;border-top:1px solid var(--line);color:var(--m
         <li><b>×1</b>, <b>×10</b> and <b>×30</b> on the <b>LAB CLOCK</b> speed up time while you wait. Manual counting always runs at ×1.</li>
         <li><b>Rebuild the bench</b> (below) runs the first-visit tour again.</li>
         <li><b>⟩</b> at the top of the side panel hides it. Click any tab to bring it back.</li>
-        <li>The lamp, bath, solution and sprig are locked while the automatic counter runs.</li>
+        <li>The lamp, bath, solution, sprigs and tube switch are locked while a counter runs.</li>
       </ul>
     </section>
     <section>
@@ -188,10 +201,19 @@ footer{flex:none;padding:7px 18px;border-top:1px solid var(--line);color:var(--m
     <section>
       <h4>Counting bubbles</h4>
       <ul>
-        <li><b>AUTO:</b> an optical gate on the tube counts bubbles for the time you choose. Two bubbles very close together pass as one, so it undercounts fast streams.</li>
-        <li><b>MANUAL:</b> press <b>TAP</b> (or the space bar) for every bubble, and use the stopwatch. Both counters can run together.</li>
+        <li><b>AUTO:</b> an optical gate on each tube counts bubbles for the time you choose. With three tubes, all three are counted at once and logged as three counts. Two bubbles very close together pass as one, so the gate undercounts fast streams.</li>
+        <li><b>MANUAL:</b> press <b>TAP</b> (or the space bar) for every bubble, and use the stopwatch. With three tubes you count the selected tube only: nobody can tally three streams at once.</li>
         <li>After any change, the sprig takes a few minutes to settle. The log records how long it had.</li>
         <li><b>RECUT STEM</b> gives a fresh cut. Bubble size changes, so the count changes too.</li>
+      </ul>
+    </section>
+    <section>
+      <h4>One tube or three</h4>
+      <ul>
+        <li><b>3 TUBES</b> puts three tubes in a row across the beam, 2.5 cm apart, each with its own sprig and solution. The lamp, bath and NaHCO₃ setting are shared.</li>
+        <li>Only the middle position is on the lamp’s axis. The outer tubes get a few percent less light, and much less when the lamp is close. Tap a tube (or its circle in the <b>TOP VIEW</b>) to select it: the meters read at the selected tube.</li>
+        <li><b>ROTATE</b> moves every tube one place, so each sprig spends time in each position.</li>
+        <li>Repeated counts of one sprig are not independent replicates. In the Data tab, <b>Each sprig’s mean is a trial</b> treats each sprig as one replicate. This is the default with three tubes.</li>
       </ul>
     </section>
     <section>
@@ -231,6 +253,16 @@ footer{flex:none;padding:7px 18px;border-top:1px solid var(--line);color:var(--m
     <section>
       <h4>Why the data are not perfect</h4>
       <p>Like a real pond weed, every sprig is different, bubbles vary in size, the rate wanders from minute to minute, the solution runs down, the water drifts in temperature and the counter misses close pairs. Repeated counts scatter. That is not a mistake: it is why you take many counts and test your means statistically.</p>
+    </section>
+    <section>
+      <h4>For teachers: a set-up link</h4>
+      <p>Make a link that fixes how the lab works for your class, then post it in Teams. Students who open it cannot change these settings.</p>
+      <div class="tl-grid">
+        <label for="tlTubes">Tubes</label><select class="inl" id="tlTubes"><option value="">Student chooses</option><option value="1">1 tube</option><option value="3">3 tubes</option></select>
+        <label for="tlCounter">Counting</label><select class="inl" id="tlCounter"><option value="">Automatic and manual</option><option value="manual">Manual only</option></select>
+        <label for="tlTrials">Trials</label><select class="inl" id="tlTrials"><option value="">Student chooses</option><option value="count">Each count</option><option value="sprig">Each sprig’s mean</option></select>
+      </div>
+      <div class="tl-url"><input class="inl" id="tlUrl" readonly aria-label="Set-up link"><button type="button" class="b" id="tlCopy">Copy link</button></div>
     </section>
     <section>
       <h4>Devices</h4>
@@ -311,7 +343,8 @@ const LEDMAP=Object.fromEntries(LEDS.map(l=>[l.id,l]));
 const luxPerUmol=L=>L.luxPer||683*L.V*119.6/L.nm;   // lux per µmol m⁻² s⁻¹ at that wavelength
 const LAMP_A=4;            // cm: half-size of the LED array, so it is not a point source
 const D_MIN=5, D_MAX=60;   // cm, lamp face to tube centre
-const geom=d=>(100+LAMP_A*LAMP_A)/(d*d+LAMP_A*LAMP_A);   // relative to 10 cm
+// relative to 10 cm on the axis; y is the sideways offset of a tube from the lamp's axis (cm)
+const geom=(d,y=0)=>{ const r2=d*d+y*y; return (100+LAMP_A*LAMP_A)/(r2+LAMP_A*LAMP_A)*(d/Math.sqrt(r2)); };
 const AMBIENT=4;           // µmol m⁻² s⁻¹ of white light from the room lights
 const ROOM_T=21;
 const NAH=[0,0.1,0.25,0.5,1.0,2.0,3.0];   // NaHCO₃ / % w/v
@@ -321,7 +354,7 @@ const FT_PEAK=(()=>{let p=0;for(let T=0;T<=50;T+=0.01)p=Math.max(p,fTraw(T));ret
 const fT=T=>fTraw(T)/FT_PEAK;
 const fC=C=>{C=Math.max(0,C);return (C+BIO.c0)/(C+BIO.c0+BIO.kc)*(1-0.06*Math.max(0,C-1.5));};
 function nrh(aI,P){ const s=aI+P; return (s-Math.sqrt(Math.max(0,s*s-4*BIO.theta*aI*P)))/(2*BIO.theta); }
-function lampPPFD(c){ return c.bright/100*LEDMAP[c.led].ppfd*geom(c.dist); }        // true photon flux at the tube
+function lampPPFD(c){ return c.bright/100*LEDMAP[c.led].ppfd*geom(c.dist,c.off||0); }        // true photon flux at the tube
 function effLight(c){ return lampPPFD(c)*LEDMAP[c.led].eff+(c.room?AMBIENT*LEDMAP.white.eff:0); }
 function grossO2(I,T,C){ return nrh(BIO.alpha*I,BIO.pmax*fT(T)*fC(C)); }
 function respO2(T){ return BIO.r25*Math.pow(2,(T-25)/10); }
@@ -354,104 +387,158 @@ function simCount(rate,secs,r){
 }
 
 /* ===================== state ===================== */
+// One tube, or three tubes side by side across the beam (positions 1–3, 2.5 cm apart; position 2 is on the lamp's axis).
+// Each tube has its own sprig, its own solution and its own optical gate. The lamp, bath and room lights are shared.
+const TUBE_L=['A','B','C'];
+const TUBE_GAP=2.5;      // cm between neighbouring tube centres
+const N_SPRIGS=9;
+// Teacher link: ?tubes=1|3 fixes the bench, ?counter=manual removes the automatic counter, ?trials=count|sprig fixes the results table.
+const PARAMS=new URLSearchParams(location.search);
+const LOCK={tubes:['1','3'].includes(PARAMS.get('tubes'))?+PARAMS.get('tubes'):null, manualOnly:PARAMS.get('counter')==='manual', agg:['count','sprig'].includes(PARAMS.get('trials'))?PARAMS.get('trials'):null};
+const anyLock=()=>!!(LOCK.tubes||LOCK.manualOnly||LOCK.agg);
+function newRT(){ return {r:0, ou:1, gas:0, need:1, lastB:-1e9, lastSize:1, settleTau:NOISE.newSprigTau}; }
+function newTube(i,sprig){ return {sprig, pos:i, C:NAH[3], lastChange:0, rt:newRT()}; }
 const S={
   led:'blue', bright:60, dist:15, room:true,
-  bathOn:false, setT:25.0, T:ROOM_T, nah:3, C:NAH[3],
-  sprig:0, sprigs:[], cal:null,
-  clock:0, speed:1, lastChange:0,
-  auto:{win:60, running:false, t0:0, count:0, cond:null, Tsum:0, Tn:0},
-  man:{running:false, t0:0, elapsed:0, count:0},
-  runs:[], nextId:1, guides:{}, guideId:'action', chal:null, panelCollapsed:false, iv:'nm',
-  rt:{r:0, ou:1, gas:0, need:1, lastB:-1e9, settleTau:90}
+  bathOn:false, setT:25.0, T:ROOM_T, nah:3,
+  tubes:1, sel:0, tube:[], sprigs:[], cal:null,
+  clock:0, speed:1,
+  auto:{win:60, running:false, t0:0, counts:[0,0,0], cond:null, Tsum:0, Tn:0},
+  man:{running:false, t0:0, elapsed:0, count:0, cond:null, logged:false},
+  runs:[], nextId:1, guides:{}, guideId:'action', chal:null, panelCollapsed:false, iv:'nm', agg:null
 };
-const BUB=[];   // bubbles drawn in the tube: {born, x, size}
+const BUB=[];   // bubbles drawn in the tubes: {born, x, size, t}
 const WINS=[30,60,120,300];
-function cond(){ return {led:S.led,bright:S.bright,dist:S.dist,room:S.room,bathOn:S.bathOn,T:S.T,C:S.C}; }
-function curSprig(){ return S.sprigs[S.sprig]; }
-function targetRate(){ return bubbleRate(cond(),curSprig()); }
-function initSprigs(){ const r=TEST?mulberry32(777):Math.random; S.sprigs=Array.from({length:6},()=>newSprig(r)); }
+const nTubes=()=>S.tubes===3?3:1;
+const activeTubes=()=>S.tube.slice(0,nTubes());
+function tubeOff(t){ return S.tubes===3?(S.tube[t].pos-1)*TUBE_GAP:0; }   // cm off the lamp's axis
+function cond(){ return condT(S.sel); }
+function condT(t){ return {led:S.led,bright:S.bright,dist:S.dist,room:S.room,bathOn:S.bathOn,T:S.T,C:S.tube[t].C,off:tubeOff(t)}; }
+function sprigOf(t){ return S.sprigs[S.tube[t].sprig]; }
+function curSprig(){ return sprigOf(S.sel); }
+function targetRate(t=S.sel){ return bubbleRate(condT(t),sprigOf(t)); }
+function aggMode(){ return LOCK.agg||S.agg||(S.tubes===3?'sprig':'count'); }
+function initSprigs(){ const r=TEST?mulberry32(777):Math.random; S.sprigs=Array.from({length:N_SPRIGS},()=>newSprig(r)); }
+function initTubes(){ S.tube=[0,1,2].map(i=>newTube(i,i)); }
 function initCal(){ const r=TEST?mulberry32(99):Math.random; S.cal={par:1+0.02*gaussR(r), lux:1+0.03*gaussR(r)}; if(TEST) S.cal={par:1,lux:1}; }
+function firstFree(used){ for(let k=0;k<N_SPRIGS;k++) if(!used.has(k)) return k; return 0; }
+// Make sure the three tubes hold three different sprigs.
+function fixDupes(){ const used=new Set(); S.tube.forEach((tb,i)=>{ if(used.has(tb.sprig)){ tb.sprig=firstFree(used); tb.rt=newRT(); tb.lastChange=S.clock; } used.add(tb.sprig); }); }
 let saveTimer=null;
 function save(){ if(TEST) return; clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ try{
-  const o={...S}; delete o.rt; o.auto={...S.auto,running:false}; o.man={...S.man,running:false};
+  const o={...S}; o.auto={...S.auto,running:false}; o.man={...S.man,running:false};
   localStorage.setItem(STORE_KEY,JSON.stringify(o)); }catch(e){} },300); }
 function loadSaved(){
-  if(TEST){ initSprigs(); initCal(); return; }
-  try{ const o=JSON.parse(localStorage.getItem(STORE_KEY)||'null'); if(o&&o.sprigs&&o.sprigs.length===6){ Object.assign(S,o,{rt:S.rt}); S.auto.running=false; S.man.running=false; } }catch(e){}
-  if(!S.sprigs.length) initSprigs(); if(!S.cal) initCal();
+  if(!TEST){ try{ const o=JSON.parse(localStorage.getItem(STORE_KEY)||'null');
+    if(o&&Array.isArray(o.sprigs)&&o.sprigs.length>=6){
+      const old=!Array.isArray(o.tube);
+      Object.assign(S,o); S.auto={win:o.auto&&o.auto.win||60,running:false,t0:0,counts:[0,0,0],cond:null,Tsum:0,Tn:0}; S.man={running:false,t0:0,elapsed:0,count:0,cond:null,logged:false};
+      while(S.sprigs.length<N_SPRIGS) S.sprigs.push(newSprig(Math.random));
+      if(old){ initTubes(); S.tube[0].sprig=o.sprig||0; S.tube.forEach(tb=>tb.C=typeof o.C==='number'?o.C:NAH[S.nah]); fixDupes(); S.tubes=1; S.sel=0;
+        delete S.sprig; delete S.C; delete S.rt; delete S.lastChange; }
+    } }catch(e){} }
+  if(!S.sprigs.length) initSprigs();
+  if(!S.tube.length) initTubes();
+  if(!S.cal) initCal();
   if(!LEDMAP[S.led]) S.led='blue';
-  S.rt.r=targetRate(); S.rt.need=bubbleSize(rnd);
+  if(LOCK.tubes) S.tubes=LOCK.tubes;
+  if(S.tubes!==3){ S.tubes=1; S.sel=0; } else fixDupes();
+  S.sel=clamp(S.sel|0,0,nTubes()-1);
+  if(!TEST) S.tube.forEach((tb,i)=>{ tb.rt=tb.rt||newRT(); tb.rt.r=targetRate(i); tb.rt.need=bubbleSize(rnd); tb.lastChange=Math.min(tb.lastChange||0,S.clock-600); });
 }
 
 /* ===================== bench changes ===================== */
 function locked(){ return S.auto.running; }
-function changed(kind){ S.lastChange=S.clock; S.rt.settleTau=kind==='sprig'?NOISE.newSprigTau:NOISE.settleTau; save(); }
+function busy(){ return S.auto.running||S.man.running; }
+function touch(t){ const tb=S.tube[t]; tb.lastChange=S.clock; tb.rt.settleTau=NOISE.settleTau; }
+function changed(){ S.tube.forEach((_,i)=>touch(i)); save(); }
+function sprigChanged(t){ const tb=S.tube[t]; tb.lastChange=S.clock; tb.rt.settleTau=NOISE.newSprigTau; tb.rt.r=0; tb.rt.gas=0; }
 function setLed(id){ if(locked()||S.led===id) return; S.led=id; changed(); }
 function setBright(v){ if(locked()) return; v=clamp(Math.round(pnum(v)),0,100); if(!isFinite(v)||v===S.bright) return; S.bright=v; changed(); }
 function setDist(v){ if(locked()) return; v=clamp(Math.round(pnum(v)*2)/2,D_MIN,D_MAX); if(!isFinite(v)||v===S.dist) return; S.dist=v; changed(); }
 function setRoom(on){ if(locked()) return; S.room=!!on; changed(); }
 function setBath(on){ if(locked()) return; S.bathOn=!!on; changed(); }
 function setSetT(v){ if(locked()) return; v=clamp(Math.round(pnum(v)*2)/2,10,45); if(!isFinite(v)) return; S.setT=v; changed(); }
-function setNah(i){ if(locked()) return; i=clamp(i,0,NAH.length-1); S.nah=i; S.C=NAH[i]; S.rt.r=0; S.rt.gas=0; changed('sprig'); }
-function freshSolution(){ if(locked()) return; S.C=NAH[S.nah]; S.rt.r=0; S.rt.gas=0; changed('sprig'); }
-function setSprigIdx(i){ if(locked()) return; i=(i+6)%6; S.sprig=i; S.rt.r=0; S.rt.gas=0; changed('sprig'); }
-function recut(){ if(locked()) return; const sp=curSprig(); sp.size=Math.exp(0.25*gauss()); sp.cuts=(sp.cuts||1)+1; S.rt.r=0; S.rt.gas=0; changed('sprig'); }
-function newSprigs(){ if(locked()) return; S.sprigs=Array.from({length:6},()=>newSprig(rnd)); S.rt.r=0; S.rt.gas=0; changed('sprig'); }
+// The NaHCO₃ setting is the same for every tube; changing it (or refreshing) means new solution in each.
+function setNah(i){ if(locked()) return; i=clamp(i,0,NAH.length-1); S.nah=i; S.tube.forEach((tb,k)=>{ tb.C=NAH[i]; sprigChanged(k); }); save(); }
+function freshSolution(){ if(locked()) return; S.tube.forEach((tb,k)=>{ tb.C=NAH[S.nah]; sprigChanged(k); }); save(); }
+// Step the selected tube to the next sprig that is not already in another tube.
+function setSprigStep(d){ if(busy()) return; const tb=S.tube[S.sel], used=new Set(activeTubes().filter((_,i)=>i!==S.sel).map(x=>x.sprig)); let k=tb.sprig;
+  for(let n=0;n<N_SPRIGS;n++){ k=(k+d+N_SPRIGS)%N_SPRIGS; if(!used.has(k)) break; } tb.sprig=k; sprigChanged(S.sel); save(); }
+function setSprigIdx(i){ if(busy()) return; i=((i%N_SPRIGS)+N_SPRIGS)%N_SPRIGS; if(activeTubes().some((x,k)=>k!==S.sel&&x.sprig===i)) return; S.tube[S.sel].sprig=i; sprigChanged(S.sel); save(); }
+function recut(){ if(busy()) return; const sp=curSprig(); sp.size=Math.exp(0.25*gauss()); sp.cuts=(sp.cuts||1)+1; sprigChanged(S.sel); save(); }
+function newSprigs(){ if(busy()) return; S.sprigs=Array.from({length:N_SPRIGS},()=>newSprig(rnd)); S.tube.forEach((_,k)=>sprigChanged(k)); save(); }
+function selectTube(i){ if(S.man.running) return; S.sel=clamp(i,0,nTubes()-1); meterCache.t=-1; save(); }
+// Each tube moves one place along the row. Moving disturbs the sprigs a little, so they need to settle again.
+function rotateTubes(){ if(busy()||S.tubes!==3) return; S.tube.forEach((tb,i)=>{ tb.pos=(tb.pos+1)%3; touch(i); }); meterCache.t=-1; if(TOUR) TOUR.flags.rotated=true; save(); }
+function setTubes(n){
+  if(LOCK.tubes||busy()||S.tubes===n) return;
+  S.tubes=n===3?3:1;
+  if(S.tubes===3){ fixDupes(); touch(0); sprigChanged(1); sprigChanged(2); } else { S.sel=0; touch(0); }
+  BUB.length=0; meterCache.t=-1; save(); syncTubeButtons(); renderTable(); refreshGuide(true);
+}
 function setSpeed(v){ S.speed=S.man.running?1:v; }
 function setWin(d){ if(locked()) return; const i=clamp(WINS.indexOf(S.auto.win)+d,0,WINS.length-1); S.auto.win=WINS[i]; save(); }
 
-/* ---- meters (what the student reads) ---- */
+/* ---- meters (what the student reads, at the selected tube) ---- */
 let meterCache={t:-1,par:0,lux:0,T:0};
+function parReading(t){ return Math.max(0,Math.round(parTrue(condT(t))*S.cal.par+0.4*gauss())); }
+function luxReading(t){ return Math.max(0,Math.round(luxTrue(condT(t))*S.cal.lux+1.5*gauss())); }
 function readMeters(force){
-  if(force||Math.abs(S.clock-meterCache.t)>=0.5||meterCache.t<0){
-    const c=cond();
-    meterCache={t:S.clock, par:Math.max(0,Math.round(parTrue(c)*S.cal.par+0.4*gauss())), lux:Math.max(0,Math.round(luxTrue(c)*S.cal.lux+1.5*gauss())), T:Math.round((S.T+0.03*gauss())*10)/10};
-  }
+  if(force||Math.abs(S.clock-meterCache.t)>=0.5||meterCache.t<0)
+    meterCache={t:S.clock, par:parReading(S.sel), lux:luxReading(S.sel), T:Math.round((S.T+0.03*gauss())*10)/10};
   return meterCache;
 }
 
 /* ---- counters ---- */
+function runFrom(c,extra){
+  return Object.assign({led:c.led,bright:c.bright,dist:c.dist,room:c.room,bathOn:c.bathOn,setT:S.setT,tubes:S.tubes,tube:TUBE_L[c.tube],pos:S.tubes===3?c.pos+1:null,
+    sprig:c.sprig,cuts:c.cuts,nah:c.nah,par:c.par,lux:c.lux,settle:Math.round(c.settle)},extra);
+}
+function tubeSnap(i){ const tb=S.tube[i]; return {...condT(i),tube:i,pos:tb.pos,sprig:tb.sprig,cuts:sprigOf(i).cuts||1,nah:NAH[S.nah],par:parReading(i),lux:luxReading(i),settle:S.clock-tb.lastChange}; }
 function startAuto(){
-  if(S.auto.running) return;
+  if(S.auto.running||LOCK.manualOnly) return;
   const m=readMeters(true);
-  S.auto={win:S.auto.win,running:true,t0:S.clock,count:0,Tsum:0,Tn:0,cond:{...cond(),sprig:S.sprig,cuts:curSprig().cuts||1,nah:NAH[S.nah],par:m.par,lux:m.lux,T0:m.T,settle:S.clock-S.lastChange}};
+  S.auto={win:S.auto.win,running:true,t0:S.clock,counts:[0,0,0],Tsum:0,Tn:0,T0:m.T,cond:activeTubes().map((_,i)=>tubeSnap(i))};
 }
 function stopAuto(record){
   const a=S.auto; if(!a.running) return; a.running=false;
-  if(record){ const c=a.cond; const Tm=a.Tn?Math.round(a.Tsum/a.Tn*10)/10:c.T0;
-    addRun({kind:'auto',clock:a.t0,led:c.led,bright:c.bright,dist:c.dist,room:c.room,bathOn:c.bathOn,setT:S.setT,sprig:c.sprig,cuts:c.cuts,nah:c.nah,par:c.par,lux:c.lux,T:Tm,settle:Math.round(c.settle),t:a.win,N:a.count}); }
+  if(record){ const Tm=a.Tn?Math.round(a.Tsum/a.Tn*10)/10:a.T0;
+    a.cond.forEach(c=>pushRun(runFrom(c,{kind:'auto',clock:a.t0,T:Tm,t:a.win,N:a.counts[c.tube]}))); afterRuns(); }
 }
 function tapBubble(){ if(TOUR&&tourStep()&&tourStep().key==='counter') TOUR.flags.tapped=true; S.man.count++; }
 function manStartStop(){
   const m=S.man;
-  if(!m.running){ m.running=true; m.t0=S.clock-m.elapsed; S.speed=1; m.cond={...cond(),sprig:S.sprig,cuts:curSprig().cuts||1,nah:NAH[S.nah],par:readMeters(true).par,lux:meterCache.lux,T:meterCache.T,settle:S.clock-S.lastChange}; }
+  if(!m.running){ if(m.logged){ m.elapsed=0; m.count=0; m.logged=false; }
+    m.running=true; m.t0=S.clock-m.elapsed; S.speed=1; m.cond={...tubeSnap(S.sel),T:readMeters(true).T}; }
   else { m.running=false; m.elapsed=S.clock-m.t0; const c=m.cond;
-    if(m.elapsed>=5&&c) addRun({kind:'manual',clock:m.t0,led:c.led,bright:c.bright,dist:c.dist,room:c.room,bathOn:c.bathOn,setT:S.setT,sprig:c.sprig,cuts:c.cuts,nah:c.nah,par:c.par,lux:c.lux,T:c.T,settle:Math.round(c.settle),t:Math.round(m.elapsed*100)/100,N:m.count}); }
+    if(m.elapsed>=5&&c){ m.logged=true; pushRun(runFrom(c,{kind:'manual',clock:m.t0,T:c.T,t:Math.round(m.elapsed*100)/100,N:m.count})); afterRuns(); } }
 }
-function manReset(){ if(S.man.running) return; S.man.elapsed=0; S.man.count=0; }
-function addRun(r){ r.id=S.nextId++; r.use=true; S.runs.push(r); save(); renderLog(); renderTable(); refreshGuide(true); }
+function manReset(){ if(S.man.running) return; S.man.elapsed=0; S.man.count=0; S.man.logged=false; }
+function pushRun(r){ r.id=S.nextId++; r.use=true; S.runs.push(r); }
+function afterRuns(){ save(); renderLog(); renderTable(); refreshGuide(true); }
+function addRun(r){ pushRun(r); afterRuns(); }
 
 /* ---- time step (lab seconds) ---- */
-function onBubble(tb){
-  const rt=S.rt;
-  if(S.auto.running&&tb>=S.auto.t0&&tb-rt.lastB>=NOISE.dead) S.auto.count++;
+function onBubble(t,tb){
+  const tube=S.tube[t], rt=tube.rt;
+  if(S.auto.running&&t<S.auto.cond.length&&tb>=S.auto.t0&&tb-rt.lastB>=NOISE.dead) S.auto.counts[t]++;
   rt.lastB=tb;
-  if(BUB.length<60) BUB.push({born:tb,x:(rnd()-0.5)*3,size:rt.lastSize});
-  // CO₂ is used up by photosynthesis
-  S.C=Math.max(0,S.C-NOISE.deplete);
+  if(BUB.length<150) BUB.push({born:tb,x:(rnd()-0.5)*3,size:rt.lastSize,t});
+  tube.C=Math.max(0,tube.C-NOISE.deplete);   // CO₂ is used up by photosynthesis
 }
 function stepBio(dt){
-  const rt=S.rt;
-  // water temperature
-  const c=cond(), target=(S.bathOn?S.setT:ROOM_T)+lampHeat(c);
+  // water temperature (one bath for all tubes)
+  const c0=condT(0), target=(S.bathOn?S.setT:ROOM_T)+lampHeat(c0);
   S.T+=(target-S.T)*(1-Math.exp(-dt/(S.bathOn?NOISE.bathTau:NOISE.airTau)));
-  // heat damage stays
-  if(S.T>38){ const sp=curSprig(); sp.dmg=Math.min(0.95,sp.dmg+NOISE.dmgRate*(S.T-38)*dt/60); }
-  // the sprig settles towards its new rate
-  rt.r+=(targetRate()-rt.r)*(1-Math.exp(-dt/rt.settleTau));
-  rt.ou+=(1-rt.ou)*dt/NOISE.ouTau+NOISE.ouSig*Math.sqrt(2*dt/NOISE.ouTau)*gauss();
-  rt.gas+=rt.r*Math.max(0,rt.ou)*dt/60;
-  while(rt.gas>=rt.need){ rt.gas-=rt.need; rt.lastSize=rt.need; rt.need=bubbleSize(rnd); onBubble(S.clock+dt*rnd()); }
+  for(let t=0;t<nTubes();t++){
+    const rt=S.tube[t].rt, sp=sprigOf(t);
+    if(S.T>38) sp.dmg=Math.min(0.95,sp.dmg+NOISE.dmgRate*(S.T-38)*dt/60);   // heat damage stays
+    rt.r+=(targetRate(t)-rt.r)*(1-Math.exp(-dt/rt.settleTau));            // the sprig settles towards its new rate
+    rt.ou+=(1-rt.ou)*dt/NOISE.ouTau+NOISE.ouSig*Math.sqrt(2*dt/NOISE.ouTau)*gauss();
+    rt.gas+=rt.r*Math.max(0,rt.ou)*dt/60;
+    while(rt.gas>=rt.need){ rt.gas-=rt.need; rt.lastSize=rt.need; rt.need=bubbleSize(rnd); onBubble(t,S.clock+dt*rnd()); }
+  }
   S.clock+=dt;
   if(S.auto.running){ S.auto.Tsum+=S.T; S.auto.Tn++; if(S.clock-S.auto.t0>=S.auto.win) stopAuto(true); }
 }
@@ -463,7 +550,7 @@ function advance(realDt){
     stepBio(d); left-=d; }
   for(let i=BUB.length-1;i>=0;i--) if(S.clock-BUB[i].born>8) BUB.splice(i,1);
 }
-// Jump forward (used by tests and by WAIT): advance lab time without drawing.
+// Jump forward (used by tests): advance lab time without drawing.
 function fastForward(secs){ let left=secs; while(left>0){ const d=Math.min(0.05,left); stepBio(d); left-=d; } BUB.length=0; }
 
 /* ===================== canvas ===================== */
@@ -507,7 +594,7 @@ function lcdU(x,y,w,h,val,unit,o={}){
   const uw=unit?unitW(unit):0;
   if(unit) txt(unit,x+w-8,y+h/2+2,MF(10.5,600),'#3f8f5f','right','middle');
   txt(val,x+w-10-uw-(unit?4:0),y+h/2+1,MF(o.size||17,700),o.col||COL.lcd,'right','middle');
-  if(o.label) txt(o.label,x,y-5,F(11,600),COL.mute);
+  if(o.label) txt(o.label,x+6,y+h/2+1,MF(11,700),o.labelCol||'#3f8f5f','left','middle');
 }
 function knob(cx,cy,r,frac,col,onStep,dis){
   ctx.save(); ctx.globalAlpha=dis?0.45:1;
@@ -528,9 +615,10 @@ function tapDisplay(x,y,w,h,value,commit,dis,id){ hitRect(x,y,w,h,{disabled:dis,
 /* ---- layout (logical units) ---- */
 const LAY={
   clock:{x:16,y:16,w:236,h:150},
+  top:{x:574,y:16,w:292,h:140},
   rail:{x0:270,x1:870,y:246},
   tank:{x:884,y:24,w:176,h:300},
-  tubeX:928,
+  tubeX:936,
   lamp:{x:16,y:344,w:250,h:340},
   sol:{x:274,y:344,w:196,h:340},
   bath:{x:478,y:344,w:186,h:340},
@@ -539,6 +627,8 @@ const LAY={
 };
 const PX_CM=(LAY.tubeX-LAY.rail.x0-40)/D_MAX;  // rail scale
 const lampFaceX=d=>LAY.tubeX-d*PX_CM;
+// Where a tube is drawn in the side view. Position 1 is the far side of the row, 3 the near side (oblique view).
+function tubeDraw(t){ if(S.tubes!==3) return {x:LAY.tubeX,dy:0,alpha:1,w:32}; const p=S.tube[t].pos; return {x:LAY.tubeX+(1-p)*34, dy:(p-1)*5, alpha:[0.8,0.9,1][p], w:28}; }
 
 /* ---- frame ---- */
 function draw(){
@@ -548,13 +638,13 @@ function draw(){
   ctx.strokeStyle='rgba(255,255,255,0.03)'; ctx.lineWidth=1;
   for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
   for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
-  // bench top
-  ctx.fillStyle='#1a1f24'; ctx.fillRect(0,LAY.rail.y+62,W,8);
+  ctx.fillStyle='#1a1f24'; ctx.fillRect(0,LAY.rail.y+62,W,8);   // bench top
   const L=LAY;
   slot('clock',L.clock.x,L.clock.y,L.clock.w,L.clock.h,drawClock);
   drawBeam();
   if(isBuilt('lamp')) drawRailAndLamp();
   drawTank();
+  if(S.tubes===3) slot('tubes',L.top.x,L.top.y,L.top.w,L.top.h,drawTop);
   slot('lamp',L.lamp.x,L.lamp.y,L.lamp.w,L.lamp.h,drawLampModule);
   slot('sol',L.sol.x,L.sol.y,L.sol.w,L.sol.h,drawSolModule);
   slot('bath',L.bath.x,L.bath.y,L.bath.w,L.bath.h,drawBathModule);
@@ -573,24 +663,20 @@ function drawClock(){
 }
 function drawRailAndLamp(){
   const R=LAY.rail;
-  // rail and scale
   rr(R.x0,R.y+40,LAY.tank.x-8-R.x0,10,4); ctx.fillStyle='#2a3036'; ctx.fill();
   for(let cm=0;cm<=D_MAX;cm++){ const x=LAY.tubeX-cm*PX_CM; if(x<R.x0) break; if(x>LAY.tank.x-4) continue; const big=cm%10===0, mid=cm%5===0;
     ctx.beginPath(); ctx.moveTo(x,R.y+40); ctx.lineTo(x,R.y+40-(big?10:mid?6:3)); ctx.strokeStyle=big?'#8d969f':'#4a535c'; ctx.lineWidth=1; ctx.stroke();
     if(big) txt(String(cm),x,R.y+64,MF(10.5,600),COL.mute,'center'); }
-  txt('distance d from lamp face to tube centre / cm',R.x0,R.y+80,F(11,600),COL.mute);
-  // lamp head
+  txt(S.tubes===3?'distance d from lamp face to the middle of the row of tubes / cm':'distance d from lamp face to tube centre / cm',R.x0,R.y+80,F(11,600),COL.mute);
   const fx=lampFaceX(S.dist), L=LEDMAP[S.led], y0=R.y-70, hw=46, hh=76;
   ctx.fillStyle='#2c333a'; ctx.fillRect(fx-hw+8,R.y+6,12,34);   // stand
   rr(fx-hw-14,y0,hw+14,hh,8); ctx.fillStyle='#262c32'; ctx.fill(); ctx.strokeStyle='#4a535c'; ctx.lineWidth=1.5; ctx.stroke();
   for(let i=0;i<7;i++){ ctx.fillStyle='#1b2025'; ctx.fillRect(fx-hw-12+i*6,y0+6,3,hh-12); }
   rr(fx-8,y0+4,8,hh-8,3); ctx.fillStyle=S.bright>0?L.css:'#333'; ctx.globalAlpha=S.bright>0?0.35+0.65*S.bright/100:1; ctx.fill(); ctx.globalAlpha=1;
   txt('LED',fx-hw+4,y0-6,F(11,700),COL.mute,'center');
-  // distance arrow
   const ay=R.y+18; ctx.strokeStyle=COL.accent; ctx.lineWidth=1.2; ctx.setLineDash([4,3]);
   ctx.beginPath(); ctx.moveTo(fx,ay); ctx.lineTo(LAY.tubeX,ay); ctx.stroke(); ctx.setLineDash([]);
   txt('d = '+S.dist.toFixed(1)+' cm',(fx+LAY.tubeX)/2,ay-6,MF(11.5,700),COL.accent,'center');
-  // drag handle on the lamp
   hitRect(fx-hw-14,y0,hw+14,hh+46,{cursor:'ew-resize',disabled:locked(),id:'lampHead',down:p=>{ const off=p.x-fx; return {move:q=>setDist((LAY.tubeX-(q.x-off))/PX_CM)}; }});
 }
 function drawBeam(){
@@ -602,41 +688,64 @@ function drawBeam(){
   ctx.fillStyle=g; ctx.fill(); ctx.restore();
 }
 function drawTank(){
-  const T=LAY.tank, tx=LAY.tubeX;
-  // tank glass
+  const T=LAY.tank;
   rr(T.x,T.y,T.w,T.h,6); ctx.fillStyle='rgba(120,180,210,0.05)'; ctx.fill(); ctx.strokeStyle='rgba(180,220,240,0.35)'; ctx.lineWidth=2; ctx.stroke();
   const wy=T.y+30; ctx.fillStyle=COL.water; ctx.fillRect(T.x+2,wy,T.w-4,T.h-32);
   ctx.strokeStyle='rgba(140,210,240,0.5)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(T.x+2,wy); ctx.lineTo(T.x+T.w-2,wy); ctx.stroke();
   txt(isBuilt('bath')?'WATER BATH':'GLASS TANK',T.x+T.w/2,T.y+T.h+16,F(11,700),COL.mute,'center');
-  // heater coil + thermometer
   if(isBuilt('bath')){
     ctx.strokeStyle=S.bathOn?'#ff8a5c':'#5a646d'; ctx.lineWidth=3;
     ctx.beginPath(); for(let i=0;i<9;i++){ const x=T.x+18+i*16; ctx.moveTo(x,T.y+T.h-14); ctx.arc(x+8,T.y+T.h-14,8,Math.PI,0); } ctx.stroke();
     ctx.fillStyle='#c9d1d8'; ctx.fillRect(T.x+T.w-22,T.y+8,5,T.h-60); ctx.beginPath(); ctx.arc(T.x+T.w-19.5,T.y+T.h-50,6,0,7); ctx.fillStyle='#e05a4a'; ctx.fill();
   }
-  // test tube
-  const tw=34, ty0=T.y+6, ty1=T.y+T.h-30;
-  ctx.save(); ctx.beginPath(); ctx.moveTo(tx-tw/2,ty0); ctx.lineTo(tx-tw/2,ty1-tw/2); ctx.arc(tx,ty1-tw/2,tw/2,Math.PI,0,true); ctx.lineTo(tx+tw/2,ty0);
-  ctx.fillStyle='rgba(120,200,235,0.12)'; ctx.fill(); ctx.strokeStyle='rgba(210,235,250,0.6)'; ctx.lineWidth=1.6; ctx.stroke(); ctx.restore();
-  const surf=ty0+22; ctx.strokeStyle='rgba(160,220,245,0.6)'; ctx.beginPath(); ctx.moveTo(tx-tw/2+2,surf); ctx.lineTo(tx+tw/2-2,surf); ctx.stroke();
-  // Elodea sprig: stem from the bottom up to the cut end, with whorls of three leaves
-  const sp=curSprig(), cutY=surf+70, baseY=ty1-10;
+  // tubes, far side first
+  const order=activeTubes().map((_,i)=>i).sort((a,b)=>S.tube[a].pos-S.tube[b].pos);
+  if(S.tubes!==3) order.splice(0,order.length,0);
+  for(const t of order) drawTube(t);
+  // meter sensors clipped beside the selected tube, facing the lamp
+  if(isBuilt('meters')){ const d=tubeDraw(S.sel), sx=d.x-d.w/2-8, sy=LAY.rail.y-58+d.dy; ctx.fillStyle='#3a434c'; ctx.fillRect(sx-3,sy-14,6,28); ctx.fillStyle='#d9e0e6'; ctx.beginPath(); ctx.arc(sx-3,sy-7,3.5,0,7); ctx.arc(sx-3,sy+7,3.5,0,7); ctx.fill();
+    if(S.tubes!==3) txt('PAR · LUX',sx-8,sy-18,F(9.5,700),COL.mute,'right'); }
+  txt(S.tubes===3?`Tube ${TUBE_L[S.sel]} selected · sprig ${S.tube[S.sel].sprig+1}`:`Elodea · sprig ${S.tube[0].sprig+1}`,T.x+T.w/2,T.y-4,F(11,700),COL.leaf,'center');
+}
+function drawTube(t){
+  const T=LAY.tank, d=tubeDraw(t), tx=d.x, tw=d.w, ty0=T.y+8+d.dy, ty1=T.y+T.h-30+d.dy, surf=ty0+22, three=S.tubes===3, sel=three&&t===S.sel;
+  ctx.save(); ctx.globalAlpha=d.alpha;
+  ctx.beginPath(); ctx.moveTo(tx-tw/2,ty0); ctx.lineTo(tx-tw/2,ty1-tw/2); ctx.arc(tx,ty1-tw/2,tw/2,Math.PI,0,true); ctx.lineTo(tx+tw/2,ty0);
+  ctx.fillStyle='rgba(18,40,50,0.55)'; ctx.fill(); ctx.fillStyle='rgba(120,200,235,0.12)'; ctx.fill();
+  ctx.strokeStyle=sel?COL.accent:'rgba(210,235,250,0.6)'; ctx.lineWidth=sel?2.4:1.6; ctx.stroke();
+  ctx.strokeStyle='rgba(160,220,245,0.6)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(tx-tw/2+2,surf); ctx.lineTo(tx+tw/2-2,surf); ctx.stroke();
+  // Elodea sprig, cut end up: a short stem with whorls of three leaves
+  const sp=sprigOf(t), k=S.tube[t].sprig, baseY=ty1-8, cutY=baseY-(78+9*(k%3));
   const green=sp&&sp.dmg>0.3?'#8a9a4a':COL.leaf;
-  ctx.strokeStyle=COL.leafD; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(tx-2,baseY); ctx.quadraticCurveTo(tx+5,(baseY+cutY)/2,tx,cutY); ctx.stroke();
-  for(let y=baseY-6;y>cutY+8;y-=13){ const s=(baseY-y)/(baseY-cutY), cx=tx-2+7*s*(1-s)*2;
-    for(const a of [-1,1]){ ctx.beginPath(); ctx.ellipse(cx+a*8,y,9,3,a*-0.5,0,7); ctx.fillStyle=green; ctx.fill(); }
-    ctx.beginPath(); ctx.ellipse(cx,y-3,3,6,0,0,7); ctx.fillStyle=COL.leafD; ctx.fill(); }
-  ctx.fillStyle='#d8e8c0'; ctx.fillRect(tx-2.5,cutY-1.5,5,3);   // cut end
-  // optical counter ring
+  ctx.strokeStyle=COL.leafD; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(tx-2,baseY); ctx.quadraticCurveTo(tx+4,(baseY+cutY)/2,tx,cutY); ctx.stroke();
+  for(let y=baseY-6;y>cutY+8;y-=12){ const s=(baseY-y)/(baseY-cutY), cx=tx-2+6*s*(1-s)*2;
+    for(const a of [-1,1]){ ctx.beginPath(); ctx.ellipse(cx+a*7,y,8,2.8,a*-0.5,0,7); ctx.fillStyle=green; ctx.fill(); }
+    ctx.beginPath(); ctx.ellipse(cx,y-3,2.8,5.5,0,0,7); ctx.fillStyle=COL.leafD; ctx.fill(); }
+  ctx.fillStyle='#d8e8c0'; ctx.fillRect(tx-2.5,cutY-1.5,5,3);
+  // optical gate on each tube
   const gateY=cutY-24;
-  if(isBuilt('counter')){ ctx.fillStyle='#2c333a'; ctx.fillRect(tx-tw/2-8,gateY-5,tw+16,10); const lit=S.rt.lastB>S.clock-0.15; ctx.beginPath(); ctx.arc(tx+tw/2+4,gateY,3,0,7); ctx.fillStyle=lit?'#ff4a4a':'#4a2020'; ctx.fill(); }
-  // bubbles
-  for(const b of BUB){ const age=S.clock-b.born; if(age<0) continue; const y=cutY-4-age*38; if(y<surf+3) continue;
+  if(isBuilt('counter')&&!LOCK.manualOnly){ ctx.fillStyle='#2c333a'; const gw=three?3:6; ctx.fillRect(tx-tw/2-gw,gateY-4,tw+2*gw,8); const lit=S.tube[t].rt.lastB>S.clock-0.15; ctx.beginPath(); ctx.arc(tx+tw/2+gw-3,gateY,2.6,0,7); ctx.fillStyle=lit?'#ff4a4a':'#4a2020'; ctx.fill(); }
+  for(const b of BUB){ if(b.t!==t) continue; const age=S.clock-b.born; if(age<0) continue; const y=cutY-4-age*38; if(y<surf+3) continue;
     const r=2.6*Math.cbrt(b.size||1); ctx.beginPath(); ctx.arc(tx+b.x+Math.sin(age*3+b.born)*1.5,y,r,0,7); ctx.strokeStyle='rgba(230,248,255,0.9)'; ctx.lineWidth=1.2; ctx.stroke(); }
-  // meter sensors clipped beside the tube, facing the lamp
-  if(isBuilt('meters')){ const sx=tx-tw/2-9, sy=LAY.rail.y-58; ctx.fillStyle='#3a434c'; ctx.fillRect(sx-3,sy-14,6,28); ctx.fillStyle='#d9e0e6'; ctx.beginPath(); ctx.arc(sx-3,sy-7,3.5,0,7); ctx.arc(sx-3,sy+7,3.5,0,7); ctx.fill();
-    txt('PAR · LUX',sx-8,sy-18,F(9.5,700),COL.mute,'right'); }
-  txt('Elodea · sprig '+(S.sprig+1),tx,T.y-2+0,F(11,700),COL.leaf,'center');
+  if(three) txt(TUBE_L[t],tx,ty0+15,F(12,700),sel?COL.accent:'#cfe3ec','center');
+  ctx.restore();
+  if(three) hitRect(tx-tw/2-2,surf,tw+4,ty1-surf,{tap:()=>selectTube(t),id:'tube'+t,disabled:S.man.running});
+}
+// Top view of the row of tubes: shows positions and which tube is selected.
+function drawTop(){
+  const b=LAY.top; moduleBox(b.x,b.y,b.w,b.h,'TOP VIEW · ROW OF TUBES',COL.water);
+  const cy=b.y+80, lx=b.x+30, cx=b.x+196, L=LEDMAP[S.led];
+  ctx.save(); ctx.globalAlpha=0.08+0.2*S.bright/100; ctx.beginPath(); ctx.moveTo(lx,cy-6); ctx.lineTo(cx-14,cy-46); ctx.lineTo(cx-14,cy+46); ctx.lineTo(lx,cy+6); ctx.closePath(); ctx.fillStyle=L.css; ctx.fill(); ctx.restore();
+  rr(b.x+16,cy-14,14,28,3); ctx.fillStyle='#262c32'; ctx.fill(); ctx.fillStyle=L.css; ctx.fillRect(lx-3,cy-11,3,22);
+  ctx.setLineDash([3,3]); ctx.strokeStyle='#4a535c'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(lx,cy); ctx.lineTo(cx+20,cy); ctx.stroke(); ctx.setLineDash([]);
+  txt('lamp axis',b.x+38,cy-6,F(10,600),COL.mute);
+  for(let p=0;p<3;p++){ const t=S.tube.findIndex(x=>x.pos===p), y=cy+(p-1)*32, sel=t===S.sel;
+    txt('pos '+(p+1),cx-20,y+4,MF(10.5,600),COL.mute,'right');
+    ctx.beginPath(); ctx.arc(cx,y,12,0,7); ctx.fillStyle=sel?COL.accent:'#20323a'; ctx.fill(); ctx.strokeStyle=sel?COL.accent:'#6f97a8'; ctx.lineWidth=1.5; ctx.stroke();
+    txt(TUBE_L[t],cx,y+1,F(12,700),sel?'#1a1206':'#cfe3ec','center','middle');
+    HITS.push({circ:true,cx,cy:y,r:15,tap:()=>selectTube(t),id:'top'+t,disabled:S.man.running}); }
+  button(b.x+b.w-74,cy-15,62,30,'ROTATE',{onTap:rotateTubes,disabled:busy(),font:F(11.5,700),id:'rotate'});
+  txt('2.5 cm apart',b.x+b.w-43,cy+30,F(10,600),COL.mute,'center');
 }
 
 function drawLampModule(){
@@ -656,19 +765,19 @@ function drawLampModule(){
   txt('or drag the lamp',b.x+14,b.y+312,F(11,500),COL.mute);
 }
 function drawSolModule(){
-  const b=LAY.sol, lk=locked(); moduleBox(b.x,b.y,b.w,b.h,'SOLUTION',COL.water);
-  txt('NaHCO₃ / % w/v',b.x+14,b.y+50,F(11,700),COL.mute);
+  const b=LAY.sol, lk=locked(), bz=busy(); moduleBox(b.x,b.y,b.w,b.h,'SOLUTION',COL.water);
+  txt(S.tubes===3?'NaHCO₃ / % w/v · all tubes':'NaHCO₃ / % w/v',b.x+14,b.y+50,F(11,700),COL.mute);
   button(b.x+14,b.y+58,34,36,'−',{disabled:lk||S.nah===0,onTap:()=>setNah(S.nah-1),font:F(18,700),id:'nahDn'});
   lcdU(b.x+54,b.y+58,b.w-108,36,NAH[S.nah].toFixed(2),'');
   button(b.x+b.w-48,b.y+58,34,36,'+',{disabled:lk||S.nah===NAH.length-1,onTap:()=>setNah(S.nah+1),font:F(18,700),id:'nahUp'});
   button(b.x+14,b.y+104,b.w-28,28,'FRESH SOLUTION',{disabled:lk,onTap:freshSolution,id:'fresh'});
   ctx.strokeStyle='#2a3138'; ctx.beginPath(); ctx.moveTo(b.x+14,b.y+150); ctx.lineTo(b.x+b.w-14,b.y+150); ctx.stroke();
-  txt('SPRIG',b.x+14,b.y+174,F(11,700),COL.mute);
-  button(b.x+14,b.y+182,34,36,'‹',{disabled:lk,onTap:()=>setSprigIdx(S.sprig-1),font:F(18,700),id:'sprDn'});
-  lcdU(b.x+54,b.y+182,b.w-108,36,String(S.sprig+1)+' of 6','',{size:15});
-  button(b.x+b.w-48,b.y+182,34,36,'›',{disabled:lk,onTap:()=>setSprigIdx(S.sprig+1),font:F(18,700),id:'sprUp'});
-  button(b.x+14,b.y+228,b.w-28,28,'RECUT STEM',{disabled:lk,onTap:recut,id:'recut'});
-  button(b.x+14,b.y+264,b.w-28,28,'NEW SPRIGS',{disabled:lk,onTap:()=>{ if(confirm('Replace all six sprigs with new ones from the tank?')) newSprigs(); },id:'newspr'});
+  txt(S.tubes===3?`SPRIG IN TUBE ${TUBE_L[S.sel]}`:'SPRIG',b.x+14,b.y+174,F(11,700),S.tubes===3?COL.accent:COL.mute);
+  button(b.x+14,b.y+182,34,36,'‹',{disabled:bz,onTap:()=>setSprigStep(-1),font:F(18,700),id:'sprDn'});
+  lcdU(b.x+54,b.y+182,b.w-108,36,String(S.tube[S.sel].sprig+1)+' of '+N_SPRIGS,'',{size:15});
+  button(b.x+b.w-48,b.y+182,34,36,'›',{disabled:bz,onTap:()=>setSprigStep(1),font:F(18,700),id:'sprUp'});
+  button(b.x+14,b.y+228,b.w-28,28,'RECUT STEM',{disabled:bz,onTap:recut,id:'recut'});
+  button(b.x+14,b.y+264,b.w-28,28,'NEW SPRIGS',{disabled:bz,onTap:()=>{ if(confirm('Replace all nine sprigs with new ones from the tank?')) newSprigs(); },id:'newspr'});
   txt('cut '+(curSprig().cuts||1),b.x+14,b.y+316,MF(11,600),COL.mute);
 }
 function drawBathModule(){
@@ -692,54 +801,66 @@ function drawMeterModule(){
   txt('LUX (photometric)',b.x+14,b.y+160,F(11,700),COL.mute);
   lcdU(b.x+14,b.y+168,b.w-28,40,String(m.lux),'',{size:20});
   txt('lx · eye-weighted',b.x+14,b.y+224,F(10,600),COL.mute);
-  txt('Sensors sit beside',b.x+14,b.y+270,F(11,500),COL.mute);
-  txt('the tube, facing',b.x+14,b.y+286,F(11,500),COL.mute);
-  txt('the lamp.',b.x+14,b.y+302,F(11,500),COL.mute);
+  if(S.tubes===3){ txt('Reading at tube '+TUBE_L[S.sel],b.x+14,b.y+270,F(12,700),COL.accent); txt('Select a tube to move',b.x+14,b.y+290,F(11,500),COL.mute); txt('the sensors to it.',b.x+14,b.y+306,F(11,500),COL.mute); }
+  else { txt('Sensors sit beside',b.x+14,b.y+270,F(11,500),COL.mute); txt('the tube, facing',b.x+14,b.y+286,F(11,500),COL.mute); txt('the lamp.',b.x+14,b.y+302,F(11,500),COL.mute); }
 }
 function drawCounterModule(){
-  const b=LAY.counter, a=S.auto, m=S.man; moduleBox(b.x,b.y,b.w,b.h,'BUBBLE COUNTER','#e6f6ff');
-  txt('AUTO · optical gate',b.x+14,b.y+50,F(11,700),COL.mute);
-  button(b.x+14,b.y+58,30,30,'−',{disabled:a.running,onTap:()=>setWin(-1),font:F(16,700),id:'winDn'});
-  lcdU(b.x+50,b.y+58,b.w-136,30,String(a.win),'s',{size:15});
-  button(b.x+b.w-80,b.y+58,30,30,'+',{disabled:a.running,onTap:()=>setWin(1),font:F(16,700),id:'winUp'});
-  button(b.x+b.w-44,b.y+58,30,30,a.running?'■':'▶',{active:a.running,onTap:()=>a.running?stopAuto(false):startAuto(),id:'autoGo'});
-  const el=a.running?S.clock-a.t0:0;
-  lcdU(b.x+14,b.y+96,(b.w-34)/2,34,String(a.running?a.count:(lastAutoN()??0)),'',{size:18});
-  lcdU(b.x+20+(b.w-34)/2,b.y+96,(b.w-34)/2,34,a.running?el.toFixed(0):'—','s',{size:16});
-  txt(a.running?'counting…':'press ▶ START',b.x+14,b.y+146,F(11,600),a.running?COL.warn:COL.mute);
+  const b=LAY.counter, a=S.auto, m=S.man, three=S.tubes===3; moduleBox(b.x,b.y,b.w,b.h,'BUBBLE COUNTER','#e6f6ff');
+  if(LOCK.manualOnly){
+    txt('AUTO · switched off',b.x+14,b.y+50,F(11,700),COL.mute);
+    rr(b.x+14,b.y+58,b.w-28,72,8); ctx.fillStyle='#14181c'; ctx.fill(); ctx.strokeStyle='#2a3138'; ctx.lineWidth=1; ctx.stroke();
+    txt('Your teacher has set',b.x+b.w/2,b.y+86,F(12,600),COL.mute,'center'); txt('this lab to manual counting.',b.x+b.w/2,b.y+104,F(12,600),COL.mute,'center');
+  } else {
+    txt(three?'AUTO · a gate on every tube':'AUTO · optical gate',b.x+14,b.y+50,F(11,700),COL.mute);
+    button(b.x+14,b.y+58,30,30,'−',{disabled:a.running,onTap:()=>setWin(-1),font:F(16,700),id:'winDn'});
+    lcdU(b.x+50,b.y+58,b.w-136,30,String(a.win),'s',{size:15});
+    button(b.x+b.w-80,b.y+58,30,30,'+',{disabled:a.running,onTap:()=>setWin(1),font:F(16,700),id:'winUp'});
+    button(b.x+b.w-44,b.y+58,30,30,a.running?'■':'▶',{active:a.running,onTap:()=>a.running?stopAuto(false):startAuto(),id:'autoGo'});
+    const el=a.running?S.clock-a.t0:0;
+    if(three){ const w=(b.w-28-18)/4;
+      for(let i=0;i<3;i++) lcdU(b.x+14+i*(w+6),b.y+96,w,34,String(a.running?a.counts[i]:(lastAutoN(i)??0)),'',{size:16,label:TUBE_L[i]});
+      lcdU(b.x+14+3*(w+6),b.y+96,w,34,a.running?el.toFixed(0):'—','s',{size:14});
+    } else {
+      lcdU(b.x+14,b.y+96,(b.w-34)/2,34,String(a.running?a.counts[0]:(lastAutoN(0)??0)),'',{size:18});
+      lcdU(b.x+20+(b.w-34)/2,b.y+96,(b.w-34)/2,34,a.running?el.toFixed(0):'—','s',{size:16});
+    }
+    txt(a.running?'counting…':'press ▶ START',b.x+14,b.y+146,F(11,600),a.running?COL.warn:COL.mute);
+  }
   ctx.strokeStyle='#2a3138'; ctx.beginPath(); ctx.moveTo(b.x+14,b.y+160); ctx.lineTo(b.x+b.w-14,b.y+160); ctx.stroke();
-  txt('MANUAL · tally + stopwatch',b.x+14,b.y+182,F(11,700),COL.mute);
+  txt(three?`MANUAL · tube ${TUBE_L[S.sel]}`:'MANUAL · tally + stopwatch',b.x+14,b.y+182,F(11,700),three?COL.accent:COL.mute);
   button(b.x+14,b.y+192,96,74,'TAP',{onTap:tapBubble,font:F(20,700),fill:'#2a2f20',line:'#6b7a3a',id:'tap'});
   lcdU(b.x+118,b.y+192,b.w-132,34,String(m.count),'',{size:18});
   const me=m.running?S.clock-m.t0:m.elapsed;
   lcdU(b.x+118,b.y+232,b.w-132,34,me.toFixed(1),'s',{size:16});
   button(b.x+14,b.y+276,(b.w-34)/2,30,m.running?'STOP':'START',{active:m.running,onTap:manStartStop,id:'manGo'});
   button(b.x+20+(b.w-34)/2,b.y+276,(b.w-34)/2,30,'RESET',{disabled:m.running,onTap:manReset,id:'manReset'});
-  txt('space bar = TAP',b.x+14,b.y+326,F(11,500),COL.mute);
+  txt(three?'space bar = TAP · one tube at a time':'space bar = TAP',b.x+14,b.y+326,F(11,500),COL.mute);
 }
-function lastAutoN(){ for(let i=S.runs.length-1;i>=0;i--) if(S.runs[i].kind==='auto') return S.runs[i].N; return null; }
+function lastAutoN(t){ const L=TUBE_L[t]; for(let i=S.runs.length-1;i>=0;i--){ const r=S.runs[i]; if(r.kind==='auto'&&(r.tube||'A')===L) return r.N; } return null; }
 
 /* ===================== bench tour ===================== */
 // First visit: the bench starts bare (tank, tube and sprig). The student places each module.
 const TOURKEY='ep.tourDone';
 const TOUR_P=[
-  {key:null,title:'Your bench',text:'A sprig of Elodea, cut end up, in a tube of water inside a glass tank. In light it gives off oxygen, which leaves the cut end as bubbles. You will add each piece of equipment yourself. Press <b>Next</b> to begin.'},
+  {key:null,title:'Your bench',text:'A short sprig of Elodea, cut end up, in a tube of water inside a glass tank. In light it gives off oxygen, which leaves the cut end as bubbles. <b>1 TUBE</b> or <b>3 TUBES</b> at the top sets how many sprigs you test at once. You will add each piece of equipment yourself. Press <b>Next</b> to begin.'},
   {key:'lamp',title:'LED lamp',text:'Nine LED colours, from violet (405 nm) to far red (730 nm), plus white. Set the <b>BRIGHTNESS</b> with the knob or by typing, and drag the lamp along the rail to change the distance d.',
     try:'Choose the 630 nm red LED.',done:()=>S.led==='red'},
-  {key:'sol',title:'Solution and sprig',text:'NaHCO₃ in the water supplies CO₂. The sprig uses it up, so <b>FRESH SOLUTION</b> refills it. Six sprigs are ready in the tank. They differ, just as real plants do. <b>RECUT STEM</b> makes a new cut.',
+  {key:'sol',title:'Solution and sprig',text:'NaHCO₃ in the water supplies CO₂. The sprig uses it up, so <b>FRESH SOLUTION</b> refills it. Nine sprigs are ready in the tank. They differ, just as real plants do. <b>RECUT STEM</b> makes a new cut.',
     try:'Set NaHCO₃ to 1.00 %.',done:()=>S.nah===4},
+  {key:'tubes',only3:true,title:'Three tubes',text:'Three tubes stand in a row across the beam, 2.5 cm apart, each with its own sprig and its own solution. Only the middle position is on the lamp’s axis, so the outer tubes get a little less light. Tap a tube to select it: the meters, the sprig controls and the manual counter follow the selected tube. <b>ROTATE</b> moves every tube one place.',
+    try:'Press ROTATE once.',done:()=>!!(TOUR&&TOUR.flags.rotated)},
   {key:'bath',title:'Water bath',text:'The heater holds the tank at the set temperature, once it gets there. With the heater off, the water sits near room temperature, and a close, bright lamp warms it.',
     try:'Turn the heater on at 25.0 °C.',done:()=>S.bathOn&&near(S.setT,25)},
   {key:'meters',title:'PAR and lux meters',text:'<b>PAR</b> counts photons between 400 and 700 nm: the light a plant can use. <b>LUX</b> measures brightness as the human eye sees it. They disagree badly for coloured light. Set intensity with PAR.'},
-  {key:'counter',title:'Bubble counter',text:'<b>AUTO</b> counts bubbles through an optical gate for the time you choose. <b>MANUAL</b> is you: press <b>TAP</b> (or the space bar) for each bubble, with the stopwatch. Every count goes into the Data tab.',
+  {key:'counter',title:'Bubble counter',text:()=>(LOCK.manualOnly?'Your teacher has switched the automatic counter off, so you count.':S.tubes===3?'<b>AUTO</b> counts every tube at once, through an optical gate on each, for the time you choose.':'<b>AUTO</b> counts bubbles through an optical gate for the time you choose.')+' <b>MANUAL</b> is you: press <b>TAP</b> (or the space bar) for each bubble, with the stopwatch'+(S.tubes===3?', one tube at a time':'')+'. Every count goes into the Data tab.',
     try:'Tap once for a bubble.',done:()=>!!(TOUR&&TOUR.flags.tapped)},
   {key:'clock',title:'Lab clock',text:'After any change the sprig needs a few minutes to settle. <b>×10</b> and <b>×30</b> speed up the wait. <b>ROOM LIGHTS</b> add a little white light: turn them off for dim-light work.'},
   {key:'panel',title:'Data, Guide and Predict',text:'<b>Data</b> logs every count and builds your results table for SGL. <b>Guide</b> walks you through full investigations: start with <b>Action spectrum</b>. <b>Predict</b> tests your understanding of limiting factors. Every sprig, bubble and minute is a little different, so counts scatter: that is why you repeat them and use statistics.'}
 ];
-const ALL_KEYS=['clock','lamp','sol','bath','meters','counter'];
+const ALL_KEYS=['clock','lamp','sol','tubes','bath','meters','counter'];
 let TOUR=null, TOUR_RECT=null, tourSig='';
 function isBuilt(k){ return !TOUR||TOUR.built.has(k); }
-function startTour(){ closeHelp(); closeTypeBox(true); TOUR={list:TOUR_P,i:0,built:new Set(),flags:{}}; renderTourCard(); }
+function startTour(){ closeHelp(); closeTypeBox(true); TOUR={list:TOUR_P.filter(st=>!st.only3||S.tubes===3),i:0,built:new Set(),flags:{}}; renderTourCard(); }
 function tourStep(){ return TOUR?TOUR.list[TOUR.i]:null; }
 function tourPlace(k){ if(!TOUR) return; TOUR.built.add(k); renderTourCard(); }
 function tourGo(d){
@@ -763,7 +884,7 @@ function renderTourCard(){
   $('#panel').classList.toggle('tour-glow',st.key==='panel');
   if(st.key==='panel'&&S.panelCollapsed) setPanel(false);
   card.innerHTML=`<div class="tc-step">Step ${TOUR.i+1} of ${TOUR.list.length}</div>
-    <h4>${st.title}</h4><p>${st.text}</p>
+    <h4>${st.title}</h4><p>${typeof st.text==='function'?st.text():st.text}</p>
     ${needPlace?'<p class="tc-place">Tap the glowing outline to place it.</p>':''}
     ${st.try&&!needPlace?`<p class="tc-try ${tryOk?'ok':''}">${tryOk?'✓':'Try it:'} ${st.try}</p>`:''}
     <div class="tc-row"><button class="b" data-tour="skip">Skip: build it all</button><span style="flex:1"></span>
@@ -845,20 +966,22 @@ document.addEventListener('keydown',e=>{ if(e.code!=='Space'||e.repeat) return; 
 const ledName=id=>{ const L=LEDMAP[id]; return L.nm?L.nm+' nm':'white'; };
 const rateOf=r=>r.N*60/r.t;
 const fmtRate=v=>(Math.round(v*10)/10).toFixed(1);
+const tubeTag=r=>r.tubes===3?r.tube+'·'+r.pos:'—';
 function renderLog(){
   const el=$('#runLog');
   if(!S.runs.length){ el.innerHTML='<p class="mute">No counts yet. Set up the bench, let the sprig settle, then press ▶ on the bubble counter.</p>'; return; }
-  let h=`<div class="logwrap"><table class="dt"><tr><th></th><th>#</th><th>Sprig</th><th>Light</th><th>PAR</th><th>T / °C</th><th>NaHCO₃ / %</th><th>Settled / s</th><th>t / s</th><th>N</th></tr>`;
+  const anyThree=S.runs.some(r=>r.tubes===3);
+  let h=`<div class="logwrap"><table class="dt"><tr><th></th><th>#</th>${anyThree?'<th>Tube</th>':''}<th>Sprig</th><th>Light</th><th>PAR</th><th>T / °C</th><th>NaHCO₃ / %</th><th>Settled / s</th><th>t / s</th><th>N</th></tr>`;
   for(const r of S.runs.slice().reverse()){
-    h+=`<tr class="${r.use?'':'off'}"><td><input type="checkbox" data-use="${r.id}" ${r.use?'checked':''} aria-label="Use count ${r.id}"></td><td>${r.id}${r.kind==='manual'?'ᴹ':''}</td><td>${r.sprig+1}${(r.cuts||1)>1?'·c'+r.cuts:''}</td>`+
+    h+=`<tr class="${r.use?'':'off'}"><td><input type="checkbox" data-use="${r.id}" ${r.use?'checked':''} aria-label="Use count ${r.id}"></td><td>${r.id}${r.kind==='manual'?'ᴹ':''}</td>${anyThree?`<td>${tubeTag(r)}</td>`:''}<td>${r.sprig+1}${(r.cuts||1)>1?'·c'+r.cuts:''}</td>`+
       `<td><span class="sw" style="background:${LEDMAP[r.led].css}"></span>${ledName(r.led)} ${r.bright}% ${r.dist} cm${r.room?' ☼':''}</td><td>${r.par}</td><td>${r.T.toFixed(1)}</td><td>${r.nah.toFixed(2)}</td><td>${r.settle}</td><td>${r.kind==='manual'?r.t.toFixed(2):r.t}</td><td><b>${r.N}</b></td></tr>`;
   }
-  el.innerHTML=h+'</table></div><p class="mute" style="font-size:12px">ᴹ manual count · ☼ room lights on · c2 = second cut of the stem · PAR in µmol m⁻² s⁻¹</p>';
+  el.innerHTML=h+`</table></div><p class="mute" style="font-size:12px">ᴹ manual count · ☼ room lights on · c2 = second cut of the stem${anyThree?' · B·3 = tube B in position 3':''} · PAR in µmol m⁻² s⁻¹, at that tube</p>`;
   el.querySelectorAll('[data-use]').forEach(cb=>cb.addEventListener('change',()=>{ const r=S.runs.find(x=>x.id===+cb.dataset.use); if(r){ r.use=cb.checked; save(); renderLog(); renderTable(); refreshGuide(true); } }));
 }
 function logTSV(){
-  const head=['Count','Mode','Lab time','Sprig','Cut','LED','λ / nm','Brightness / %','d / cm ± 0.5','Room lights','PAR / µmol m⁻² s⁻¹ ± 1','Illuminance / lx ± 1','T / °C ± 0.1','NaHCO₃ / %','Settled / s','t / s','N'];
-  return [head.join('\t'),...S.runs.map(r=>[r.id,r.kind,mmss(r.clock),r.sprig+1,r.cuts||1,LEDMAP[r.led].name,LEDMAP[r.led].nm||'',r.bright,r.dist.toFixed(1),r.room?'on':'off',r.par,r.lux,r.T.toFixed(1),r.nah.toFixed(2),r.settle,r.kind==='manual'?r.t.toFixed(2):r.t,r.N].join('\t'))].join('\n');
+  const head=['Count','Mode','Lab time','Tube','Position','Sprig','Cut','LED','λ / nm','Brightness / %','d / cm ± 0.5','Room lights','PAR / µmol m⁻² s⁻¹ ± 1','Illuminance / lx ± 1','T / °C ± 0.1','NaHCO₃ / %','Settled / s','t / s','N'];
+  return [head.join('\t'),...S.runs.map(r=>[r.id,r.kind,mmss(r.clock),r.tube||'A',r.pos||'',r.sprig+1,r.cuts||1,LEDMAP[r.led].name,LEDMAP[r.led].nm||'',r.bright,r.dist.toFixed(1),r.room?'on':'off',r.par,r.lux,r.T.toFixed(1),r.nah.toFixed(2),r.settle,r.kind==='manual'?r.t.toFixed(2):r.t,r.N].join('\t'))].join('\n');
 }
 /* ---- results table: group ticked counts by the independent variable ---- */
 const IVS={
@@ -868,50 +991,68 @@ const IVS={
   T:{label:'Temperature',x:{name:'Temperature',sym:'T',unit:'°C',unc:'0.1',mode:'abs'},key:r=>r.bathOn?r.setT:Math.round(r.T),xval:rs=>Math.round(mean(rs.map(r=>r.T))*10)/10,fmt:v=>v.toFixed(1),origin:false,title:'Rate of bubble production by Elodea against water temperature'},
   nah:{label:'NaHCO₃ concentration',x:{name:'NaHCO₃ concentration',sym:'c',unit:'%',unc:'0.02',mode:'abs'},key:r=>r.nah,fmt:v=>v.toFixed(2),title:'Rate of bubble production by Elodea against NaHCO₃ concentration'}
 };
+// The trials in one row of the table: every count, or each sprig's mean rate (sprigs are the independent replicates).
+function groupTrials(g){
+  if(aggMode()==='sprig'){ const m=new Map(); for(const r of g.all){ if(!m.has(r.sprig)) m.set(r.sprig,[]); m.get(r.sprig).push(rateOf(r)); }
+    return [...m.entries()].map(([sp,a])=>({v:mean(a),n:a.length,sp})).slice(0,12); }
+  return g.all.slice(0,12).map(r=>({v:rateOf(r),n:1,sp:r.sprig}));
+}
 function groupRuns(iv){
   const I=IVS[iv], used=S.runs.filter(r=>r.use), skipped=used.filter(r=>I.skip&&I.skip(r)), rs=used.filter(r=>!(I.skip&&I.skip(r)));
   const m=new Map(); for(const r of rs){ const k=I.key(r); if(!m.has(k)) m.set(k,[]); m.get(k).push(r); }
-  const groups=[...m.entries()].map(([k,g])=>({x:I.xval?I.xval(g):k, runs:g.slice(0,12), extra:Math.max(0,g.length-12)})).sort((a,b)=>a.x-b.x);
+  const groups=[...m.entries()].map(([k,g])=>{ const G={x:I.xval?I.xval(g):k, all:g}; G.trials=groupTrials(G);
+    G.extra=aggMode()==='sprig'?Math.max(0,new Set(g.map(r=>r.sprig)).size-12):Math.max(0,g.length-12); return G; }).sort((a,b)=>a.x-b.x);
   return {groups,skipped,rs};
 }
 function controlWarnings(iv,rs){
   const w=[]; if(rs.length<2) return w;
   const span=f=>{ const v=rs.map(f); return [Math.min(...v),Math.max(...v)]; };
-  if(iv!=='par'&&iv!=='dist'){ const [a,b]=span(r=>r.par); if(b-a>Math.max(6,0.08*b)) w.push(`PAR ranges from ${a} to ${b} µmol m⁻² s⁻¹: light intensity was not held constant.`); }
+  if(iv!=='par'&&iv!=='dist'){ const [a,b]=span(r=>r.par); if(b-a>Math.max(6,0.08*b)) w.push(`PAR ranges from ${a} to ${b} µmol m⁻² s⁻¹: light intensity was not held constant.${rs.some(r=>r.tubes===3)?' The outer tubes get less light than the middle one, more so when the lamp is close: move the lamp back, or rotate the tubes between counts.':''}`); }
   if(iv!=='T'){ const [a,b]=span(r=>r.T); if(b-a>1.0) w.push(`Temperature ranges from ${a.toFixed(1)} to ${b.toFixed(1)} °C.`); }
   if(iv!=='nah'){ const [a,b]=span(r=>r.nah); if(b>a) w.push(`NaHCO₃ ranges from ${a.toFixed(2)} to ${b.toFixed(2)} %.`); }
   if(iv!=='nm'&&iv!=='par'&&new Set(rs.map(r=>r.led)).size>1) w.push('More than one LED colour is mixed in.');
   if(new Set(rs.map(r=>r.room)).size>1) w.push('Some counts had the room lights on and some off.');
-  if(new Set(rs.map(r=>r.sprig+'·'+(r.cuts||1))).size>1) w.push('More than one sprig (or stem cut) is mixed in. Sprigs differ, so this adds variation between groups.');
+  if(aggMode()==='sprig'){
+    const I=IVS[iv], sets=new Map(); for(const r of rs){ const k=I.key(r); if(!sets.has(k)) sets.set(k,new Set()); sets.get(k).add(r.sprig); }
+    const sig=[...sets.values()].map(x=>[...x].sort((a,b)=>a-b).join(',')); if(new Set(sig).size>1) w.push('Not every row used the same sprigs, so differences between sprigs add to the differences between rows. Keep the same sprigs throughout if you can.');
+    if([...sets.values()].some(x=>x.size<2)) w.push('Some rows have only one sprig, so they have no SD and cannot go into an ANOVA.');
+    const byS=new Map(); for(const r of rs){ if(!byS.has(r.sprig)) byS.set(r.sprig,new Set()); byS.get(r.sprig).add(r.cuts||1); } if([...byS.values()].some(x=>x.size>1)) w.push('A stem was recut part-way through. A new cut changes the bubble size, and so the count.');
+  } else if(new Set(rs.map(r=>r.sprig+'·'+(r.cuts||1))).size>1) w.push('More than one sprig (or stem cut) is mixed in. Sprigs differ, so this adds variation between groups.');
+  const three=rs.filter(r=>r.tubes===3); if(three.length>=6){ const pos=new Map(); for(const r of three){ if(!pos.has(r.sprig)) pos.set(r.sprig,new Set()); pos.get(r.sprig).add(r.pos); }
+    if([...pos.values()].every(x=>x.size===1)) w.push('Each sprig stayed in the same position all the time, so any difference in light between positions is mixed up with differences between sprigs. Rotate the tubes between counts.'); }
   const short=rs.filter(r=>r.settle<120).length; if(short) w.push(`${short} count${short>1?'s were':' was'} started less than 2 minutes after a change, before the sprig had settled.`);
   if(new Set(rs.map(r=>r.t)).size>1) w.push('Counting times differ. Rates are still comparable, because R = 60N / t.');
   return w;
 }
 function renderTable(){
-  const el=$('#resTable'), iv=S.iv, I=IVS[iv], {groups,skipped,rs}=groupRuns(iv);
+  const el=$('#resTable'), iv=S.iv, I=IVS[iv], {groups,skipped,rs}=groupRuns(iv), agg=aggMode();
   let h=`<div class="row"><label class="mute" for="ivSel" style="font-size:13px">Independent variable</label><select class="inl" id="ivSel">${Object.entries(IVS).map(([k,v])=>`<option value="${k}" ${k===iv?'selected':''}>${v.label}</option>`).join('')}</select></div>`;
-  if(!groups.length){ el.innerHTML=h+'<p class="mute">No ticked counts to group yet.</p>'; $('#ivSel').onchange=e=>{S.iv=e.target.value;save();renderTable();}; return; }
-  const nT=Math.max(...groups.map(g=>g.runs.length));
+  h+=`<div class="row"><label class="mute" for="aggSel" style="font-size:13px">Trials</label><select class="inl" id="aggSel" ${LOCK.agg?'disabled':''}><option value="count" ${agg==='count'?'selected':''}>Each count is a trial</option><option value="sprig" ${agg==='sprig'?'selected':''}>Each sprig’s mean is a trial</option></select>${LOCK.agg?'<span class="mute" style="font-size:12px">set by your teacher</span>':''}</div>`;
+  const bind=()=>{ $('#ivSel').onchange=e=>{S.iv=e.target.value;save();renderTable();}; const a=$('#aggSel'); if(a) a.onchange=e=>{S.agg=e.target.value;save();renderTable();refreshGuide(true);}; };
+  if(!groups.length){ el.innerHTML=h+'<p class="mute">No ticked counts to group yet.</p>'; bind(); return; }
+  const nT=Math.max(...groups.map(g=>g.trials.length)), col=agg==='sprig'?'S':'R';
   const xh=`${I.x.sym} / ${I.x.unit} ± ${I.x.unc}${I.x.mode==='pct'?' %':''}`;
-  h+=`<div class="logwrap"><table class="dt"><tr><th>${esc(xh)}</th>${Array.from({length:nT},(_,i)=>`<th>R${i+1}</th>`).join('')}</tr>`;
-  for(const g of groups) h+=`<tr><td>${I.fmt(g.x)}</td>${Array.from({length:nT},(_,i)=>`<td>${g.runs[i]?fmtRate(rateOf(g.runs[i])):''}</td>`).join('')}</tr>`;
-  h+=`</table></div><p class="mute" style="font-size:12px">R = 60N / t, the rate in bubbles min⁻¹.${skipped.length?' Note: '+I.skipMsg+'.':''}${groups.some(g=>g.extra)?' Only the first 12 trials of a group are used.':''}</p>`;
+  h+=`<div class="logwrap"><table class="dt"><tr><th>${esc(xh)}</th>${Array.from({length:nT},(_,i)=>`<th>${col}${i+1}</th>`).join('')}</tr>`;
+  for(const g of groups) h+=`<tr><td>${I.fmt(g.x)}</td>${Array.from({length:nT},(_,i)=>{ const t=g.trials[i]; return `<td${t&&agg==='sprig'?` title="sprig ${t.sp+1}: mean of ${t.n} count${t.n>1?'s':''}"`:''}>${t?fmtRate(t.v):''}</td>`; }).join('')}</tr>`;
+  const ns=groups.flatMap(g=>g.trials.map(t=>t.n));
+  h+=`</table></div><p class="mute" style="font-size:12px">${agg==='sprig'?`Each value is one sprig’s mean rate R = 60N / t, in bubbles min⁻¹ (${Math.min(...ns)===Math.max(...ns)?Math.min(...ns):Math.min(...ns)+'–'+Math.max(...ns)} count${Math.max(...ns)>1?'s':''} per sprig).`:'R = 60N / t, the rate in bubbles min⁻¹.'}${skipped.length?' Note: '+I.skipMsg+'.':''}${groups.some(g=>g.extra)?' Only the first 12 trials of a row are used.':''}</p>`;
   const w=controlWarnings(iv,rs);
   h+=w.length?`<div class="note"><b>Check your controlled variables</b><br>${w.map(esc).join('<br>')}</div>`:'<p class="okn">✓ Controlled variables look constant across these counts.</p>';
   h+=`<div class="row">${groups.length<2?'<button class="b pri" disabled>Open in SGL ↗</button>':'<a class="b pri" id="openSGL" target="_blank" rel="noopener" href="'+SGL_URL+'" style="text-decoration:none">Open in SGL ↗</a>'}<button class="b" id="copyTab">Copy table</button></div>`;
-  el.innerHTML=h;
-  $('#ivSel').onchange=e=>{S.iv=e.target.value;save();renderTable();};
+  el.innerHTML=h; bind();
   const og=$('#openSGL'); if(og){ sglURL(iv).then(u=>{ og.href=u; }); og.onclick=()=>{ S.exported=true; save(); setTimeout(()=>refreshGuide(true),0); }; }
-  $('#copyTab').onclick=()=>{ const lines=[[xh,...Array.from({length:nT},(_,i)=>'R / bubbles min⁻¹ (trial '+(i+1)+')')].join('\t'),...groups.map(g=>[I.fmt(g.x),...g.runs.map(r=>fmtRate(rateOf(r)))].join('\t'))];
+  $('#copyTab').onclick=()=>{ const lines=[[xh,...Array.from({length:nT},(_,i)=>(agg==='sprig'?'Mean R per sprig / bubbles min⁻¹ (sprig ':'R / bubbles min⁻¹ (trial ')+(i+1)+')')].join('\t'),...groups.map(g=>[I.fmt(g.x),...g.trials.map(t=>fmtRate(t.v))].join('\t'))];
     Promise.resolve().then(()=>navigator.clipboard.writeText(lines.join('\n'))).then(()=>{$('#copyTab').textContent='Copied';setTimeout(()=>{const b=$('#copyTab'); if(b) b.textContent='Copy table';},1400);},()=>{$('#copyTab').textContent='Copy failed';}); };
 }
 function sglState(iv){
-  const I=IVS[iv], {groups}=groupRuns(iv), nT=Math.max(1,...groups.map(g=>g.runs.length));
-  return { v:1, title:I.title, showTitle:true, x:{...I.x},
-    y:{name:'Rate of bubble production',sym:'R',unit:'min⁻¹',unc:'',mode:'abs'},
-    trials:nT, spread:'sd', rows:groups.map(g=>({x:I.fmt(g.x), y:g.runs.map(r=>fmtRate(rateOf(r)))})),
+  const I=IVS[iv], {groups}=groupRuns(iv), nT=Math.max(1,...groups.map(g=>g.trials.length)), sp=aggMode()==='sprig';
+  return { v:1, title:I.title+(sp?' (mean of each sprig)':''), showTitle:true, x:{...I.x},
+    y:{name:sp?'Mean rate of bubble production per sprig':'Rate of bubble production',sym:'R',unit:'min⁻¹',unc:'',mode:'abs'},
+    trials:nT, spread:'sd', rows:groups.map(g=>({x:I.fmt(g.x), y:g.trials.map(t=>fmtRate(t.v))})),
     perPoint:false, strict:false, linX:'none', linY:'none', fit:'none', maxmin:false, residuals:false, origin:I.origin!==false, tab:'raw' };
 }
+// ANOVA on the table exactly as SGL will see it (rows with at least two trials).
+function tableAnova(iv){ const gs=groupRuns(iv).groups.map(g=>g.trials.map(t=>Number(fmtRate(t.v)))).filter(a=>a.length>=2); return gs.length>=2?anova(gs):null; }
 async function sglURL(iv){
   const bytes=new TextEncoder().encode(JSON.stringify(sglState(iv)));
   const b64u=u8=>{ let s=''; u8.forEach(b=>s+=String.fromCharCode(b)); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); };
@@ -940,17 +1081,22 @@ function welch(a,b){ const va=sdev(a)**2/a.length, vb=sdev(b)**2/b.length, t=(me
 function ws(rows){ return '<div class="ws">'+rows.map(([l,m])=>`<div class="wsrow"><div class="wslab">${l}</div><div class="wsm">${m}</div></div>`).join('')+'</div>'; }
 const relOk=(v,t,tol)=>isFinite(v)&&Math.abs(v-t)<=Math.max(1e-9,Math.abs(t)*tol);
 // counts that qualify as "settled, at about the PAR the guide asks for"
-const settledRuns=f=>S.runs.filter(r=>r.use&&r.kind==='auto'&&r.settle>=180&&f(r));
+// settled counts of at least about a minute, automatic or manual
+const settledRuns=f=>S.runs.filter(r=>r.use&&r.settle>=180&&r.t>=55&&f(r));
 const at100=r=>Math.abs(r.par-100)<=5&&r.bathOn&&Math.abs(r.T-25)<=0.6&&r.nah>=1&&!r.room;
 function actionGroups(){ const m=new Map(); for(const r of settledRuns(r=>at100(r)&&LEDMAP[r.led].nm)){ const k=r.led; if(!m.has(k)) m.set(k,[]); m.get(k).push(r); } return m; }
-function refFive(){ const g=actionGroups().get('blue')||[]; return g.length>=5?g.slice(0,5):null; }
-function refOne(){ const g=actionGroups().get('blue')||[]; return g[0]||null; }
+const blueRuns=()=>actionGroups().get('blue')||[];
+function refOne(){ return blueRuns()[0]||null; }
+const sameSprigBlue=()=>{ const r0=refOne(); return r0?blueRuns().filter(r=>r.sprig===r0.sprig):[]; };
+function refFive(){ const g=sameSprigBlue(); return g.length>=5?g.slice(0,5):null; }
+// number of different sprigs with at least n counts in a list of runs
+const sprigsWith=(a,n)=>{ const m=new Map(); for(const r of a) m.set(r.sprig,(m.get(r.sprig)||0)+1); return [...m.values()].filter(v=>v>=n).length; };
+const fullSet=a=>S.tubes===3?sprigsWith(a,3)>=3:a.length>=5;
 function worked5(rs){
   const R=rs.map(rateOf), m=mean(R), s=sdev(R);
   return {R,m,s,meanHTML:ws([['Equation','x̄ = Σx / n'],['Substitute',`x̄ = (${R.map(fmtRate).join(' + ')}) / ${R.length}`],['Evaluate',`x̄ = ${sf(R.reduce((a,b)=>a+b,0),4)} / ${R.length} = ${m.toFixed(1)} bubbles min⁻¹`]]),
     sdHTML:ws([['Equation','s = √( Σ(x − x̄)² / (n − 1) )'],['Substitute',R.map(x=>`(${fmtRate(x)} − ${m.toFixed(2)})² = ${((x-m)**2).toFixed(2)}`).join('<br>')+`<br>Σ(x − x̄)² = ${R.reduce((a,x)=>a+(x-m)**2,0).toFixed(2)}`],['Evaluate',`s = √(${R.reduce((a,x)=>a+(x-m)**2,0).toFixed(2)} / ${R.length-1}) = ${s.toFixed(2)} bubbles min⁻¹`]])};
 }
-function actionAnova(){ const gs=[...actionGroups().values()].filter(g=>g.length>=3).map(g=>g.map(rateOf)); return gs.length>=3?anova(gs):null; }
 const GUIDE_A={
   id:'action', short:'Action spectrum',
   title:'Which colours of light drive photosynthesis?',
@@ -980,21 +1126,21 @@ const GUIDE_A={
       {id:'a5',type:'choice',prompt:'After you change the light, how long should you wait before counting?',
         options:['A few minutes, so the sprig settles at its new rate','No time at all: the rate changes instantly','About 1 second, for the bubbles in the tube to clear','At least an hour'],answer:0,
         explain:()=>'<div class="model">The air spaces in the leaves and stem act as a buffer, and photosynthesis takes a while to adjust. Counts started too soon carry the old rate. This lab logs how long the sprig had settled; the guide accepts counts started at least 180 s after a change.</div>'},
-      {id:'t3',type:'task',prompt:'Wait at least 180 s, then make a <b>60 s</b> automatic count under the blue LED (PAR 100 ± 5).',
+      {id:'t3',type:'task',prompt:()=>LOCK.manualOnly?'Wait at least 180 s, then count the bubbles by hand for <b>60 s</b> under the blue LED (PAR 100 ± 5): press START, TAP for every bubble, and STOP at 60 s.':'Wait at least 180 s, then make a <b>60 s</b> count under the blue LED (PAR 100 ± 5). Automatic or manual both count.',
         cond:()=>!!refOne()},
       {id:'a6',type:'num',unit:'bubbles min⁻¹',prompt:()=>{const r=refOne();return `Count ${r?r.id:'?'}: N = ${r?r.N:'?'} bubbles in t = ${r?r.t:'?'} s. Calculate the rate R in bubbles per minute.`;},
         check:x=>{const r=refOne(), R=rateOf(r); return {ok:relOk(x,R,0.01),html:ws([['Equation','R = N / t'],['Rearrange','With t in minutes: R = 60N / t (t in s)'],['Substitute',`R = 60 × ${r.N} / ${r.t}`],['Evaluate',`R = ${fmtRate(R)} bubbles min⁻¹`]])};}},
-      {id:'t4',type:'task',prompt:'Make <b>five</b> settled 60 s counts under the blue LED at 100 ± 5 µmol m⁻² s⁻¹. Stay on the same sprig.',
-        cond:()=>!!refFive(), progress:()=>`${(actionGroups().get('blue')||[]).length} of 5`},
+      {id:'t4',type:'task',prompt:()=>`Make <b>five</b> settled 60 s counts <b>of the same sprig</b> under the blue LED at 100 ± 5 µmol m⁻² s⁻¹${S.tubes===3?' (with three tubes, the counts of one tube’s sprig: two more starts give you five)':''}.`,
+        cond:()=>!!refFive(), progress:()=>{ const r0=refOne(); return r0?`${sameSprigBlue().length} of 5 (sprig ${r0.sprig+1})`:'0 of 5'; }},
       {id:'a7',type:'num',unit:'bubbles min⁻¹',prompt:()=>{const f=refFive();return `Your five rates are ${f?f.map(r=>fmtRate(rateOf(r))).join(', '):'…'} bubbles min⁻¹. Calculate the mean.`;},
         check:x=>{const w=worked5(refFive()); return {ok:relOk(x,w.m,0.01),html:w.meanHTML};}},
       {id:'a8',type:'num',unit:'bubbles min⁻¹',prompt:'Calculate the sample standard deviation of the same five rates.',
         check:x=>{const w=worked5(refFive()); return {ok:relOk(x,w.s,0.03),html:w.sdHTML+'<p class="mute">The SD shows how much repeated counts scatter. Biologists usually show ± 1 SD as error bars.</p>'};}}
     ]},
     {title:'4 · The full data set',items:[
-      {id:'t5',type:'task',prompt:'Repeat for at least <b>five</b> wavelengths, with at least <b>five</b> settled 60 s counts each, all at PAR 100 ± 5, 25 °C, 1.00 % NaHCO₃ and room lights off. Include 530 nm. Freshen the solution now and then.',
-        cond:()=>{ const g=actionGroups(); return [...g.values()].filter(a=>a.length>=5).length>=5&&(g.get('green')||[]).length>=5; },
-        progress:()=>{ const g=actionGroups(); return [...g.entries()].map(([k,a])=>`${LEDMAP[k].nm} nm: ${a.length}`).join(' · ')||'none yet'; }},
+      {id:'t5',type:'task',prompt:()=>(S.tubes===3?'Repeat for at least <b>five</b> wavelengths, with <b>three sprigs</b> and at least <b>three</b> settled 60 s counts of each sprig at every wavelength.':'Repeat for at least <b>five</b> wavelengths, with at least <b>five</b> settled 60 s counts each.')+' Keep PAR at 100 ± 5, 25 °C, 1.00 % NaHCO₃ and room lights off. Include 530 nm. Freshen the solution now and then.'+(S.tubes===3?' Rotate the tubes between counts, and check the PAR at each tube.':''),
+        cond:()=>{ const g=actionGroups(); return [...g.values()].filter(fullSet).length>=5&&fullSet(g.get('green')||[]); },
+        progress:()=>{ const g=actionGroups(); return [...g.entries()].map(([k,a])=>S.tubes===3?`${LEDMAP[k].nm} nm: ${sprigsWith(a,3)} sprig${sprigsWith(a,3)===1?'':'s'} with 3+`:`${LEDMAP[k].nm} nm: ${a.length}`).join(' · ')||'none yet'; }},
       {id:'a9',type:'choice',prompt:'Try to set the 730 nm far-red LED to 100 µmol m⁻² s⁻¹ on the PAR meter. Even at 5 cm and 100 % it reads far less. Why?',
         options:['The PAR meter only responds from 400 to 700 nm, so it barely sees far red','The far-red LED is broken','Far-red photons are absorbed by the glass','Far red is not light'],answer:0,
         explain:()=>'<div class="model">A quantum (PAR) sensor is built to cut off at 700 nm. The far-red LED gives plenty of photons, but most of them are invisible to the meter, so you cannot set it to “100” this way. Treat any 730 nm data with care, and say so in your evaluation.</div>'},
@@ -1005,14 +1151,17 @@ const GUIDE_A={
         explain:()=>'<div class="model">Chlorophylls absorb blue and red strongly and green weakly; leaves look green because they reflect and transmit it. Elodea leaves are only two cells thick, so they let a lot of green through. Photons beyond 700 nm drive photosystem II poorly, so far red does almost nothing on its own.</div>'}
     ]},
     {title:'5 · Statistics and evaluation',items:[
+      {id:'a16',type:'choice',prompt:'You make 15 counts of <b>one</b> sprig under blue light. How many independent replicates of the plant’s response do you have?',
+        options:['1: every count comes from the same sprig, so they only show how that one sprig varies','15: one for each count','5: one for every three counts','It depends on how long each count was'],answer:0,
+        explain:()=>'<div class="model">Repeated counts of one sprig show how much that sprig wanders from minute to minute. They say nothing about how different sprigs respond, and the conclusion is about Elodea in general. Treating them as 15 replicates is called pseudo-replication: it makes the error bars too small and p-values too low. Use several sprigs (the <b>3 TUBES</b> bench), and treat each sprig’s mean as one trial (<b>Each sprig’s mean is a trial</b> in the Data tab).</div>'},
       {id:'a11',type:'choice',prompt:'Which test tells you whether the mean rates at your wavelengths differ more than chance would explain?',
         options:['A one-way ANOVA across all the wavelengths','Many separate t-tests, one for every pair of colours','A correlation coefficient between wavelength and rate','A chi-squared test on the counts'],answer:0,
         explain:()=>'<div class="model">ANOVA compares three or more group means in one test. Doing a t-test for every pair raises the chance of a false positive: with 5 groups there are 10 pairs, so at p &lt; 0.05 you would expect a “significant” result by chance quite often. Rate is not linear in wavelength, so a correlation is not the right tool either.</div>'},
       {id:'a12',type:'text',prompt:'State the null hypothesis for the ANOVA.',
         model:'H₀: there is no difference between the mean rates of bubble production at the different wavelengths (all the population means are equal). Any differences in the sample means are due to chance.'},
       {id:'a13',type:'num',unit:'',prompt:'In SGL, open <b>Statistics</b> and run the one-way ANOVA. Enter the p-value it gives (e.g. 0.0003 or 2e-6).',
-        check:x=>{ const A=actionAnova(); const ok=A&&(A.p<1e-4?x<1e-3&&x>=0:Math.abs(Math.log10(Math.max(x,1e-300))-Math.log10(A.p))<0.35);
-          return {ok:!!ok,html:A?ws([['Test',`one-way ANOVA, ${A.d1+1} groups`],['Statistic',`F(${A.d1}, ${A.d2}) = ${A.F.toFixed(2)}`],['p-value',`p = ${A.p<1e-4?A.p.toExponential(1):A.p.toFixed(4)}`],['Decision',A.p<0.05?'p &lt; 0.05: reject H₀. At least one wavelength gives a different mean rate.':'p ≥ 0.05: do not reject H₀.']]):'<div class="model">Collect at least three counts at three or more wavelengths first.</div>'};}},
+        check:x=>{ const A=tableAnova('nm'); const ok=A&&(A.p<1e-4?x<1e-3&&x>=0:Math.abs(Math.log10(Math.max(x,1e-300))-Math.log10(A.p))<0.35);
+          return {ok:!!ok,html:A?ws([['Test',`one-way ANOVA, ${A.d1+1} groups`],['Statistic',`F(${A.d1}, ${A.d2}) = ${A.F.toFixed(2)}`],['p-value',`p = ${A.p<1e-4?A.p.toExponential(1):A.p.toFixed(4)}`],['Decision',A.p<0.05?'p &lt; 0.05: reject H₀. At least one wavelength gives a different mean rate.':'p ≥ 0.05: do not reject H₀.']]):'<div class="model">Send a table with at least two trials in two or more rows to SGL first.</div>'};}},
       {id:'a14',type:'choice',prompt:'ANOVA gives p = 0.0001. What can you conclude?',
         options:['At least one wavelength’s mean rate differs from the others; ANOVA alone does not say which','Every wavelength gives a different rate','There is a 0.01 % chance the hypothesis is true','Red light is best'],answer:0,
         explain:()=>'<div class="model">A small p means the differences are unlikely to be chance alone, so you reject H₀. To say <i>which</i> pairs differ, follow up with a post-hoc test, or a t-test on one planned pair (for example 450 nm against 530 nm) in SGL.</div>'},
@@ -1266,6 +1415,18 @@ document.querySelectorAll('.tabs button[data-tab]').forEach(b=>b.addEventListene
   document.querySelectorAll('.tabs button[data-tab]').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('.tabbody').forEach(x=>x.classList.toggle('on',x.id==='tab-'+b.dataset.tab));
 }));
+function syncTubeButtons(){
+  const dis=!!LOCK.tubes||busy();
+  document.querySelectorAll('[data-tubes]').forEach(b=>{ b.classList.toggle('on',+b.dataset.tubes===S.tubes); if(b.disabled!==dis) b.disabled=dis; b.title=LOCK.tubes?'Set by your teacher':''; });
+}
+document.querySelectorAll('[data-tubes]').forEach(b=>b.addEventListener('click',()=>setTubes(+b.dataset.tubes)));
+if(anyLock()){ const t=$('#tlock'); t.hidden=false; t.textContent='Teacher set-up: '+[LOCK.tubes?LOCK.tubes+(LOCK.tubes===1?' tube':' tubes'):null,LOCK.manualOnly?'manual counting':null,LOCK.agg?(LOCK.agg==='sprig'?'sprig means':'every count'):null].filter(Boolean).join(' · '); }
+function teacherLink(){ const q=new URLSearchParams(); const t=$('#tlTubes').value, c=$('#tlCounter').value, r=$('#tlTrials').value; if(t) q.set('tubes',t); if(c) q.set('counter',c); if(r) q.set('trials',r);
+  const base=location.origin+location.pathname; const qs=q.toString(); return base+(qs?'?'+qs:''); }
+function syncTeacherLink(){ $('#tlUrl').value=teacherLink(); }
+['tlTubes','tlCounter','tlTrials'].forEach(id=>$('#'+id).addEventListener('change',syncTeacherLink));
+$('#tlCopy').addEventListener('click',()=>{ const u=$('#tlUrl'); Promise.resolve().then(()=>navigator.clipboard.writeText(u.value)).then(()=>{$('#tlCopy').textContent='Copied';setTimeout(()=>$('#tlCopy').textContent='Copy link',1400);},()=>{ u.focus(); u.select(); }); });
+syncTeacherLink();
 $('#appName').textContent=BRAND.app; $('#collName').textContent=BRAND.collection;
 $('#footL').textContent=BRAND.footerLeft; $('#footR').textContent=BRAND.footerRight;
 document.title=BRAND.app;
@@ -1273,10 +1434,10 @@ if(TEST) seedRng(20261030);
 loadSaved();
 GUIDE=GUIDES.find(g=>g.id===S.guideId)||GUIDE_A;
 renderLog(); renderTable(); refreshGuide(true); renderChallenge();
-setPanel(S.panelCollapsed);
+setPanel(S.panelCollapsed); syncTubeButtons();
 window.addEventListener('resize',()=>{fitCanvas();});
 let lastT=performance.now(), slowTick=0;
-function frame(now){ const dt=Math.min(0.05,(now-lastT)/1000); lastT=now; advance(dt); tourTick(); draw();
+function frame(now){ const dt=Math.min(0.05,(now-lastT)/1000); lastT=now; advance(dt); tourTick(); syncTubeButtons(); draw();
   slowTick+=dt; if(slowTick>0.5){ slowTick=0; refreshGuide(false); }
   requestAnimationFrame(frame); }
 requestAnimationFrame(frame);
