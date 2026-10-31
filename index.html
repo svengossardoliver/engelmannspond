@@ -49,6 +49,7 @@ dialog.help::backdrop{background:rgba(5,7,9,.72)}
 .help-body p,.help-body li{font-size:13.5px;line-height:1.45;color:#d6d1c6;margin:0 0 6px}
 .help-body ol,.help-body ul{margin:0;padding-left:18px}
 .help-body .mono{font-size:12.5px}
+.help-body p.note{color:var(--warn);font-size:13px}
 .help-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 22px;border-top:1px solid var(--line)}
 .help-foot label{font-size:13.5px;color:var(--mute);display:flex;gap:8px;align-items:center;cursor:pointer}
 .help-credit{margin:0;padding:0 22px 16px;font-size:12px;color:var(--mute)}
@@ -203,7 +204,7 @@ footer{flex:none;padding:7px 18px;border-top:1px solid var(--line);color:var(--m
       <h4>Counting bubbles</h4>
       <ul>
         <li><b>AUTO:</b> an optical gate on each tube counts bubbles for the time you choose. With three tubes, all three are counted at once and logged as three counts. Two bubbles very close together pass as one, so the gate undercounts fast streams.</li>
-        <li><b>MANUAL:</b> press <b>TAP</b> (or the space bar) for every bubble, and use the stopwatch. With three tubes you count the selected tube only: nobody can tally three streams at once.</li>
+        <li><b>MANUAL:</b> press <b>TAP</b> (or the space bar) for every bubble, and use the stopwatch. With three tubes you count the selected tube only: nobody can tally three streams at once. Each manual count takes a real minute.</li>
         <li>After any change, the sprig takes a few minutes to settle. The log records how long it had.</li>
         <li><b>RECUT STEM</b> gives a fresh cut. Bubble size changes, so the count changes too.</li>
       </ul>
@@ -258,12 +259,15 @@ footer{flex:none;padding:7px 18px;border-top:1px solid var(--line);color:var(--m
     <section>
       <h4>For teachers: a set-up link</h4>
       <p>Make a link that fixes how the lab works for your class, then post it in Teams. Students who open it cannot change these settings.</p>
+      <p class="note"><b>Before choosing manual only:</b> Manual counting takes real time: every count is a real minute of watching and tapping, and the lab clock cannot speed it up. A full action spectrum takes about <b>25 minutes of counting with one tube</b> (5 wavelengths × 5 counts) and about <b>45 minutes with three tubes</b>, one tube at a time (5 wavelengths × 3 sprigs × 3 counts), plus set-up and settling. Plan a double lesson, or split the work across lessons. Counts are saved in the browser, so students must continue on the same device and browser.</p>
       <div class="tl-grid">
         <label for="tlTubes">Tubes</label><select class="inl" id="tlTubes"><option value="">Student chooses</option><option value="1">1 tube</option><option value="3">3 tubes</option></select>
         <label for="tlCounter">Counting</label><select class="inl" id="tlCounter"><option value="">Automatic and manual</option><option value="manual">Manual only</option></select>
         <label for="tlTrials">Trials</label><select class="inl" id="tlTrials"><option value="">Student chooses</option><option value="count">Each count</option><option value="sprig">Each sprig’s mean</option></select>
       </div>
       <div class="tl-url"><input class="inl" id="tlUrl" readonly aria-label="Set-up link"><button type="button" class="b" id="tlCopy">Copy link</button></div>
+      <p class="note" id="tlWarn" hidden></p>
+      <p>Engelmann’s Pond is for learning and practising investigation skills. Its data are simulated: they are not a substitute for an IA, and students should not submit them as IA data.</p>
     </section>
     <section>
       <h4>Devices</h4>
@@ -275,7 +279,7 @@ footer{flex:none;padding:7px 18px;border-top:1px solid var(--line);color:var(--m
     <span style="flex:1"></span><button type="button" class="b" id="btnTour">Rebuild the bench</button>
     <button type="button" class="b pri" id="btnHelpGo">Start the lab</button>
   </div>
-  <p class="help-credit">Created by Christopher B. Slough, Head of Science, Strothoff International School. You can open this page again at any time with <b>? Help</b>.</p>
+  <p class="help-credit">For learning and practice only: the data are simulated and are not a substitute for an IA. Created by Christopher B. Slough, Head of Science, Strothoff International School. You can open this page again at any time with <b>? Help</b>.</p>
 </dialog>
 <div id="tourCard" role="dialog" aria-live="polite"></div>
 <div id="rotateHint" role="status"><span class="ico">⟳</span><span>Turn your tablet sideways for a bigger bench and the panel beside it.</span><button id="rotateClose" aria-label="Dismiss">×</button></div>
@@ -876,7 +880,7 @@ function drawCounterModule(){
   if(LOCK.manualOnly){
     txt('AUTO · switched off',b.x+14,b.y+50,F(11,700),COL.mute);
     rr(b.x+14,b.y+58,b.w-28,72,8); ctx.fillStyle='#14181c'; ctx.fill(); ctx.strokeStyle='#2a3138'; ctx.lineWidth=1; ctx.stroke();
-    txt('Your teacher has set',b.x+b.w/2,b.y+86,F(12,600),COL.mute,'center'); txt('this lab to manual counting.',b.x+b.w/2,b.y+104,F(12,600),COL.mute,'center');
+    txt('Your teacher has set this',b.x+b.w/2,b.y+80,F(12,600),COL.mute,'center'); txt('lab to manual counting.',b.x+b.w/2,b.y+97,F(12,600),COL.mute,'center'); txt('Each count takes a real minute.',b.x+b.w/2,b.y+116,F(11.5,700),COL.warn,'center');
   } else {
     txt(three?'AUTO · a gate on every tube':'AUTO · optical gate',b.x+14,b.y+50,F(11,700),COL.mute);
     button(b.x+14,b.y+58,30,30,'−',{disabled:a.running,onTap:()=>setWin(-1),font:F(16,700),id:'winDn'});
@@ -921,7 +925,7 @@ const TOUR_P=[
   {key:'bath',title:'Water bath',text:'The heater holds the tank at the set temperature, once it gets there. With the heater off, the water sits near room temperature, and a close, bright lamp warms it.',
     try:'Turn the heater on at 25.0 °C.',done:()=>S.bathOn&&near(S.setT,25)},
   {key:'meters',title:'PAR and lux meters',text:'<b>PAR</b> counts photons between 400 and 700 nm: the light a plant can use. <b>LUX</b> measures brightness as the human eye sees it. They disagree badly for coloured light. Set intensity with PAR.'},
-  {key:'counter',title:'Bubble counter',text:()=>(LOCK.manualOnly?'Your teacher has switched the automatic counter off, so you count.':S.tubes===3?'<b>AUTO</b> counts every tube at once, through an optical gate on each, for the time you choose.':'<b>AUTO</b> counts bubbles through an optical gate for the time you choose.')+' <b>MANUAL</b> is you: press <b>TAP</b> (or the space bar) for each bubble, with the stopwatch'+(S.tubes===3?', one tube at a time':'')+'. Every count goes into the Data tab.',
+  {key:'counter',title:'Bubble counter',text:()=>(LOCK.manualOnly?'Your teacher has switched the automatic counter off, so you count. Each count takes a real minute, so plan your time: a full data set is 25–45 minutes of counting.':S.tubes===3?'<b>AUTO</b> counts every tube at once, through an optical gate on each, for the time you choose.':'<b>AUTO</b> counts bubbles through an optical gate for the time you choose.')+' <b>MANUAL</b> is you: press <b>TAP</b> (or the space bar) for each bubble, with the stopwatch'+(S.tubes===3?', one tube at a time':'')+'. Every count goes into the Data tab.',
     try:'Tap once for a bubble.',done:()=>!!(TOUR&&TOUR.flags.tapped)},
   {key:'clock',title:'Lab clock',text:'After any change the sprig needs a few minutes to settle. <b>×10</b> and <b>×30</b> speed up the wait. <b>ROOM LIGHTS</b> add a little white light: turn them off for dim-light work.'},
   {key:'panel',title:'Data, Guide and Predict',text:'<b>Data</b> logs every count and builds your results table for SGL. <b>Guide</b> walks you through full investigations: start with <b>Action spectrum</b>. <b>Predict</b> tests your understanding of limiting factors. Every sprig, bubble and minute is a little different, so counts scatter: that is why you repeat them and use statistics.'}
@@ -1212,7 +1216,7 @@ const GUIDE_A={
         check:x=>{const w=worked5(refFive()); return {ok:relOk(x,w.s,0.03),html:w.sdHTML+'<p class="mute">The SD shows how much repeated counts scatter. Biologists usually show ± 1 SD as error bars.</p>'};}}
     ]},
     {title:'4 · The full data set',items:[
-      {id:'t5',type:'task',prompt:()=>(S.tubes===3?'Repeat for at least <b>five</b> wavelengths, with <b>three sprigs</b> and at least <b>three</b> settled 60 s counts of each sprig at every wavelength.':'Repeat for at least <b>five</b> wavelengths, with at least <b>five</b> settled 60 s counts each.')+' Keep PAR at 100 ± 5, 25 °C, 1.00 % NaHCO₃ and room lights off. Include 530 nm. Freshen the solution now and then.'+(S.tubes===3?' Rotate the tubes between counts, and check the PAR at each tube.':''),
+      {id:'t5',type:'task',prompt:()=>(S.tubes===3?'Repeat for at least <b>five</b> wavelengths, with <b>three sprigs</b> and at least <b>three</b> settled 60 s counts of each sprig at every wavelength.':'Repeat for at least <b>five</b> wavelengths, with at least <b>five</b> settled 60 s counts each.')+' Keep PAR at 100 ± 5, 25 °C, 1.00 % NaHCO₃ and room lights off. Include 530 nm. Freshen the solution now and then.'+(S.tubes===3?' Rotate the tubes between counts, and check the PAR at each tube.':'')+(LOCK.manualOnly?` <span class="warnc" style="color:var(--warn)">Counting by hand, this is about ${S.tubes===3?45:25} minutes of counting, plus set-up. Your counts are saved in this browser, so you can finish next lesson on the same device.</span>`:''),
         cond:()=>{ const g=actionGroups(); return [...g.values()].filter(fullSet).length>=5&&fullSet(g.get('green')||[]); },
         progress:()=>{ const g=actionGroups(); return [...g.entries()].map(([k,a])=>S.tubes===3?`${LEDMAP[k].nm} nm: ${sprigsWith(a,3)} sprig${sprigsWith(a,3)===1?'':'s'} with 3+`:`${LEDMAP[k].nm} nm: ${a.length}`).join(' · ')||'none yet'; }},
       {id:'a9',type:'choice',prompt:'Try to set the 730 nm far-red LED to 100 µmol m⁻² s⁻¹ on the PAR meter. Even at 5 cm and 100 % it reads far less. Why?',
@@ -1242,7 +1246,10 @@ const GUIDE_A={
           return {ok:!!ok,html:A?ws([['Test',`one-way ANOVA, ${A.d1+1} groups`],['Statistic',`F(${A.d1}, ${A.d2}) = ${A.F.toFixed(2)}`],['p-value',`p = ${A.p<1e-4?A.p.toExponential(1):A.p.toFixed(4)}`],['Decision',A.p<0.05?'p &lt; 0.05: reject H₀. At least one wavelength gives a different mean rate.':'p ≥ 0.05: do not reject H₀.']]):'<div class="model">Send a table with at least two trials in two or more rows to SGL first.</div>'};}},
       {id:'a14',type:'choice',prompt:'ANOVA gives p = 0.0001. What can you conclude?',
         options:['At least one wavelength’s mean rate differs from the others; ANOVA alone does not say which','Every wavelength gives a different rate','There is a 0.01 % chance the hypothesis is true','Red light is best'],answer:0,
-        explain:()=>'<div class="model">A small p means the differences are unlikely to be chance alone, so you reject H₀. To say <i>which</i> pairs differ, follow up with a post-hoc test, or a t-test on one planned pair (for example 450 nm against 530 nm) in SGL.</div>'},
+        explain:()=>'<div class="model">A small p means the differences are unlikely to be chance alone, so you reject H₀. To say <i>which</i> pairs differ, follow up with a post-hoc test. SGL shows <b>Tukey’s test</b> under the ANOVA: it compares every pair of wavelengths at once and says which pairs differ.</div>'},
+      {id:'a21',type:'choice',prompt:'After the ANOVA, why use Tukey’s test rather than a separate t-test for every pair of wavelengths?',
+        options:['Tukey’s test keeps the overall chance of a false “significant” result at 5 % across all the pairs; many separate t-tests do not','Tukey’s test gives smaller p-values, so more results are significant','t-tests cannot compare wavelengths','Tukey’s test does not need repeated trials'],answer:0,
+        explain:()=>'<div class="model">Each t-test at the 5 % level has a 1 in 20 chance of a false positive. With 7 wavelengths there are 21 pairs, so a few “significant” differences would appear by chance alone. Tukey’s test (Tukey–Kramer when groups have different sizes) adjusts for all the comparisons together. Its p-values are larger than separate t-tests would give: that is the price of not being fooled.</div>'},
       {id:'a15',type:'text',prompt:'Evaluate your method. Give two sources of error in this investigation, say whether each is random or systematic, and suggest an improvement for each.',
         model:'Random: counts scatter because bubbles vary in size and the rate drifts minute to minute; take more and longer counts. Sprigs differ from each other; use one sprig throughout, or randomise and replicate across sprigs. Systematic: the solution runs down, so later counts are lower; refresh it and randomise the order of colours. The optical counter undercounts fast streams; check against a manual count, or collect gas volume instead. Counting before the sprig settles carries over the old rate; always wait. Bubbles are not pure O₂ and not all O₂ forms bubbles (some dissolves), so bubble rate is only a proxy for photosynthesis.'}
     ]}
@@ -1501,7 +1508,10 @@ document.querySelectorAll('[data-tubes]').forEach(b=>b.addEventListener('click',
 if(anyLock()){ const t=$('#tlock'); t.hidden=false; t.textContent='Teacher set-up: '+[LOCK.tubes?LOCK.tubes+(LOCK.tubes===1?' tube':' tubes'):null,LOCK.manualOnly?'manual counting':null,LOCK.agg?(LOCK.agg==='sprig'?'sprig means':'every count'):null].filter(Boolean).join(' · '); }
 function teacherLink(){ const q=new URLSearchParams(); const t=$('#tlTubes').value, c=$('#tlCounter').value, r=$('#tlTrials').value; if(t) q.set('tubes',t); if(c) q.set('counter',c); if(r) q.set('trials',r);
   const base=location.origin+location.pathname; const qs=q.toString(); return base+(qs?'?'+qs:''); }
-function syncTeacherLink(){ $('#tlUrl').value=teacherLink(); }
+function syncTeacherLink(){ $('#tlUrl').value=teacherLink();
+  const man=$('#tlCounter').value==='manual', t=$('#tlTubes').value, w=$('#tlWarn');
+  w.hidden=!man;
+  if(man) w.innerHTML='<b>Manual only: plan the time.</b> Every count is a real minute of watching and tapping. A full action spectrum takes about '+(t==='3'?'<b>45 minutes</b> of counting with three tubes (one tube at a time)':t==='1'?'<b>25 minutes</b> of counting with one tube':'<b>25 minutes</b> of counting with one tube, or <b>45 minutes</b> with three')+', plus set-up and settling. Counts are saved in the browser, so students must continue on the same device.'; }
 ['tlTubes','tlCounter','tlTrials'].forEach(id=>$('#'+id).addEventListener('change',syncTeacherLink));
 $('#tlCopy').addEventListener('click',()=>{ const u=$('#tlUrl'); Promise.resolve().then(()=>navigator.clipboard.writeText(u.value)).then(()=>{$('#tlCopy').textContent='Copied';setTimeout(()=>$('#tlCopy').textContent='Copy link',1400);},()=>{ u.focus(); u.select(); }); });
 syncTeacherLink();

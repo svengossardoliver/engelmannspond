@@ -2,6 +2,8 @@
 
 A photosynthesis lab for IB Diploma Biology, and the first app in **Strothoff Biology Laboratories**. Students count oxygen bubbles from a sprig of *Elodea* under an LED lamp, design an investigation, collect many repeated counts, and process them in Strothoff Graphical Laboratories (SGL) with error bars, a t-test or a one-way ANOVA.
 
+For learning and practising investigation skills. The data are simulated and are not a substitute for an IA.
+
 Created by Christopher B. Slough, Head of Science, Strothoff International School.
 © 2026 Christopher B. Slough.
 
@@ -41,7 +43,9 @@ The help sheet builds a link that fixes settings for a class:
 - `?counter=manual`: the automatic counter is removed; students count by hand.
 - `?trials=count` or `?trials=sprig`: the results table's trials setting is locked.
 
-For example `https://<site>/?tubes=1&counter=manual`. Make the link from the live site, so it points there. The header shows the active settings.
+For example `https://<site>/?tubes=1&counter=manual`.
+
+**Before choosing manual only, plan the time.** Every manual count is a real minute of watching and tapping; the lab clock cannot speed it up. A full action spectrum is about 25 minutes of counting with one tube (5 wavelengths × 5 counts) and about 45 minutes with three tubes, one tube at a time (5 × 3 sprigs × 3 counts), plus set-up and settling. Plan a double lesson or split the work across lessons. Counts are saved in the browser, so students must continue on the same device and browser. The help sheet's link builder, the counter, the bench tour and the guide all repeat this. Make the link from the live site, so it points there. The header shows the active settings.
 
 ---
 

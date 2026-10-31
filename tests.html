@@ -155,6 +155,13 @@ async function run(){
     check('teacher link: the header says what the teacher set',/3 tubes · manual counting · sprig means/.test(EL('document.getElementById("tlock").textContent')));
     EL('document.getElementById("tlTubes").value="1"; document.getElementById("tlCounter").value="manual"; document.getElementById("tlTrials").value=""; syncTeacherLink();');
     check('the help sheet builds a set-up link',/\?tubes=1&counter=manual$/.test(EL('document.getElementById("tlUrl").value')),EL('document.getElementById("tlUrl").value'));
+    check('link builder: choosing manual only shows the time warning (25 minutes for one tube)',EL('document.getElementById("tlWarn").hidden')===false&&/25 minutes/.test(EL('document.getElementById("tlWarn").textContent')));
+    EL('document.getElementById("tlTubes").value="3"; syncTeacherLink();');
+    check('…and 45 minutes for three tubes',/45 minutes/.test(EL('document.getElementById("tlWarn").textContent')));
+    EL('document.getElementById("tlCounter").value=""; syncTeacherLink();');
+    check('…and hides it otherwise',EL('document.getElementById("tlWarn").hidden')===true);
+    check('manual-only bench tells the student each count takes a real minute',(()=>{ EL('draw()'); return EL('(()=>{ let found=false; const o=ctx.fillText; ctx.fillText=function(t,...a){ if(/real minute/.test(t)) found=true; return o.call(this,t,...a); }; draw(); ctx.fillText=o; return found; })()'); })());
+    check('the help sheet says the data are not a substitute for an IA',/not a substitute for an IA/.test(EL('document.getElementById("helpDlg").textContent')));
     check('no script errors with a teacher link',(L.__errors||[]).length===0,(L.__errors||[]).join(' | '));
     // ---------- results table and SGL ----------
     E(`S.runs=[];S.nextId=1;
