@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Engelmann's Pond · tests</title>
+<style>
+body{background:#0b0f16;color:#e9eef7;font:14px/1.5 ui-monospace,monospace;padding:20px}
+.p{color:#2ee59d}.f{color:#ff5d6c}
+iframe{position:absolute;left:-10000px;top:0;width:1400px;height:900px;border:0}
+</style>
+</head>
+<body>
+<h1>Engelmann's Pond · tests</h1>
+<div id="sum">Running…</div>
+<pre id="out"></pre>
+<iframe id="f" src="index.html?test=1"></iframe>
+<script>
+const results=[];
+function check(name,ok,detail){ results.push({name,ok:!!ok,detail:detail==null?'':String(detail)}); }
+const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+function b64urlDecode(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; const bin=atob(s); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return u; }
+async function decodeLink(link){
+  const h=link.split('#g=')[1]; const kind=h[0], body=h.slice(1);
+  const bytes=b64urlDecode(body);
+  if(kind==='z'){ const st=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw')); return JSON.parse(await new Response(st).text()); }
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+async function run(){
+  const fr=document.getElementById('f'); const W=fr.contentWindow; const E=s=>W.eval(s);
+  for(let i=0;i<100&&!W.EP_READY;i++) await new Promise(r=>setTimeout(r,50));
+  check('app initialises',W.EP_READY===true);
+  try{
+    // ---------- the biology model ----------
+    const G=(I,T,C)=>E(`Math.max(0,grossO2(${I},${T},${C})-respO2(${T})-BIO.th)`);
+    check('rate rises with light',G(50,25,1)<G(100,25,1)&&G(100,25,1)<G(200,25,1));
+    check('rate saturates at high light (1000 vs 500 within 10 %)',G(1000,25,1)/G(500,25,1)<1.10,(G(1000,25,1)/G(500,25,1)).toFixed(3));
+    check('no light, no bubbles (below 28 °C)',E('bubbleRate({led:"blue",bright:0,dist:20,room:false,T:25,C:1},null)')===0);
+    check('compensation point: very dim light gives no bubbles',G(4,25,1)===0);
+    const lowT=G(25,27,1)/G(25,15,1), hiT=G(800,27,1)/G(800,15,1);
+    check('Blackman: in dim light, warming 15 → 27 °C changes the rate by under 15 %',Math.abs(lowT-1)<0.15,lowT.toFixed(3));
+    check('Blackman: in bright light, warming 15 → 27 °C raises the rate by over 50 %',hiT>1.5,hiT.toFixed(3));
+    const lowC=G(25,25,1)/G(25,25,0.1), hiC=G(600,25,1)/G(600,25,0.1);
+    check('Blackman: in dim light, NaHCO₃ 0.1 → 1 % changes the rate by under 15 %',Math.abs(lowC-1)<0.15,lowC.toFixed(3));
+    check('Blackman: in bright light, NaHCO₃ 0.1 → 1 % raises the rate by over 40 %',hiC>1.4,hiC.toFixed(3));
+    check('CO₂ response levels off: 2 % within 5 % of 1 %',Math.abs(G(600,25,2)/G(600,25,1)-1)<0.05);
+    let best=0,Tb=0; for(let T=10;T<=45;T+=0.5){ const r=G(800,T,1); if(r>best){best=r;Tb=T;} }
+    check('temperature optimum between 27 and 32 °C',Tb>=27&&Tb<=32,Tb);
+    check('above 38 °C the rate is below 40 % of the optimum',G(800,38,1)<0.4*best,(G(800,38,1)/best).toFixed(2));
+    check('warm water gives off gas even in the dark',E('bubbleRate({led:"blue",bright:0,dist:20,room:false,T:40,C:1},null)')>0);
+    const at=id=>E(`bubbleRate({led:"${id}",bright:100,dist:Math.sqrt(LEDMAP["${id}"].ppfd*116/100-16),room:false,T:25,C:1},null)`);
+    check('equal photon flux (100 µmol m⁻² s⁻¹) lands at 100',near(E('lampPPFD({led:"green",bright:100,dist:Math.sqrt(LEDMAP.green.ppfd*116/100-16)})'),100,1e-9));
+    check('action spectrum: red (660) > blue (450) > green (530)',at('deepred')>at('blue')&&at('blue')>at('green'),[at('deepred'),at('blue'),at('green')].map(v=>v.toFixed(1)).join(' > '));
+    check('green rate is under 60 % of deep red at equal photon flux',at('green')<0.6*at('deepred'));
+    check('far red alone gives almost nothing',at('farred')<1);
+    check('lux per µmol: green is over 10 × deep red (660) and blue (450)',E('luxPerUmol(LEDMAP.green)')>10*E('luxPerUmol(LEDMAP.deepred)')&&E('luxPerUmol(LEDMAP.green)')>10*E('luxPerUmol(LEDMAP.blue)'));
+    check('lux per µmol for white LED is 74 (4000 K)',E('luxPerUmol(LEDMAP.white)')===74);
+    check('PAR meter sees under 10 % of far-red photons',E('parTrue({led:"farred",bright:100,dist:10,room:false})/lampPPFD({led:"farred",bright:100,dist:10})')<0.1);
+    const ratio=E('geom(10)/geom(20)');
+    check('lamp is not a point source: I(10 cm)/I(20 cm) between 3 and 3.9',ratio>3&&ratio<3.9,ratio.toFixed(2));
+    // ---------- counting statistics ----------
+    const st=E(`(()=>{ const r=mulberry32(5); const a=[]; for(let i=0;i<300;i++) a.push(simCount(30,60,r)); return a; })()`);
+    const tn=st.map(x=>x.trueN), m=tn.reduce((a,b)=>a+b,0)/tn.length, v=tn.reduce((a,b)=>a+(b-m)**2,0)/(tn.length-1);
+    check('60 s counts at 30 bubbles min⁻¹ average 30 (± 5 %)',near(m,30,1.5),m.toFixed(2));
+    check('counts scatter (SD over 1), but bubbles are more regular than random (variance below the mean)',Math.sqrt(v)>1&&v<m,`SD ${Math.sqrt(v).toFixed(2)}, var ${v.toFixed(1)}`);
+    const fast=E(`(()=>{ const r=mulberry32(6); let N=0,T=0; for(let i=0;i<60;i++){ const c=simCount(150,60,r); N+=c.N; T+=c.trueN; } return N/T; })()`);
+    const slow=E(`(()=>{ const r=mulberry32(7); let N=0,T=0; for(let i=0;i<60;i++){ const c=simCount(20,60,r); N+=c.N; T+=c.trueN; } return N/T; })()`);
+    check('optical counter undercounts fast streams (150 min⁻¹ → 75–97 %)',fast<0.97&&fast>0.75,fast.toFixed(3));
+    check('optical counter is accurate for slow streams (20 min⁻¹ → over 99 %)',slow>0.99,slow.toFixed(3));
+    // ---------- statistics against SciPy ----------
+    const A=E('anova([[1,2,3],[2,3,4],[5,6,7]])');
+    check('one-way ANOVA: F = 13.0, p = 0.00659 (SciPy)',near(A.F,13,1e-9)&&near(A.p,0.006591796875,1e-6),`F ${A.F} p ${A.p}`);
+    const T2=E('welch([1,2,3,4,5],[2,4,6,8,10])');
+    check('Welch t-test: t = −1.897, df = 5.882, p = 0.1075 (SciPy)',near(T2.t,-1.8973665961,1e-6)&&near(T2.df,5.882352941,1e-6)&&near(T2.p,0.1075311949,1e-5),`t ${T2.t} df ${T2.df} p ${T2.p}`);
+    // ---------- the bench ----------
+    E('S.runs=[];S.nextId=1;S.led="blue";S.bright=60;S.dist=15;S.room=false;S.bathOn=true;S.setT=25;S.nah=4;S.C=1;S.sprig=0;');
+    E('fastForward(900)');
+    check('water bath reaches 25.0 °C within 15 min',near(E('S.T'),25,0.3),E('S.T').toFixed(2));
+    E('setSprigIdx(1)'); E('fastForward(10)');
+    check('a new sprig starts slowly (rate after 10 s under 40 % of target)',E('S.rt.r')<0.4*E('targetRate()'),`${E('S.rt.r').toFixed(1)} vs ${E('targetRate()').toFixed(1)}`);
+    E('fastForward(900)');
+    check('…and has settled after 15 min (within 5 %)',near(E('S.rt.r'),E('targetRate()'),0.05*E('targetRate()')));
+    E('setBright(80)'); check('a change resets the settling clock',near(E('S.clock-S.lastChange'),0,1e-9));
+    E('fastForward(240)'); E('startAuto()');
+    E('setBright(30)'); check('the lamp is locked while the automatic counter runs',E('S.bright')===80);
+    E('fastForward(61)');
+    const r1=E('S.runs[S.runs.length-1]');
+    check('an automatic count is logged with its conditions',!!r1&&r1.kind==='auto'&&r1.bright===80&&r1.led==='blue'&&r1.t===60&&r1.settle>=239,JSON.stringify(r1));
+    check('the logged count is plausible for the settled rate',r1&&Math.abs(r1.N-E('targetRate()'))<0.35*E('targetRate()')+3,`${r1&&r1.N} vs ${E('targetRate()').toFixed(1)}`);
+    E('S.C=1;'); E('fastForward(1800)');
+    check('the sprig uses up the NaHCO₃',E('S.C')<1);
+    E('freshSolution()'); check('FRESH SOLUTION refills it',E('S.C')===1);
+    E('setBath(false)'); E('setDist(5)'); E('setBright(100)'); E('S.T=21'); E('fastForward(1800)');
+    check('without the bath, a close bright lamp warms the water by over 2 °C',E('S.T')>23,E('S.T').toFixed(2));
+    E('setBath(true)'); E('setSetT(42)'); E('fastForward(1200)');
+    const dmg=E('curSprig().dmg'); E('setSetT(25)'); E('fastForward(1200)');
+    check('heat above 38 °C damages the sprig, and the damage stays',dmg>0.2&&E('curSprig().dmg')===dmg,dmg.toFixed(2));
+    // ---------- results table and SGL ----------
+    E(`S.runs=[];S.nextId=1;
+      for(const [led,N] of [['blue',30],['blue',32],['blue',29],['green',14],['green',15],['green',13],['white',25]]) addRun({kind:'auto',clock:0,led,bright:50,dist:15,room:false,bathOn:true,setT:25,sprig:0,cuts:1,nah:1,par:led==='green'?100:101,lux:1,T:25.0,settle:300,t:60,N});
+      S.iv='nm'; renderTable();`);
+    const gr=E('groupRuns("nm")');
+    check('results table groups by wavelength and leaves out white',gr.groups.length===2&&gr.groups[0].x===450&&gr.groups[1].x===530&&gr.skipped.length===1);
+    const link=await E('sglURL("nm")'); const sg=await decodeLink(link);
+    check('Open in SGL: wavelength on x, three trials, ± 1 SD',sg.x.unit==='nm'&&sg.trials===3&&sg.spread==='sd'&&sg.rows.length===2&&sg.rows[0].y.join()==='30.0,32.0,29.0'&&sg.fit==='none'&&sg.origin===false,JSON.stringify(sg.rows));
+    check('Open in SGL points at sisgraphicallaboratory.netlify.app',link.startsWith('https://sisgraphicallaboratory.netlify.app/#g='));
+    check('controlled variables look constant for these counts',E('controlWarnings("nm",groupRuns("nm").rs).length')===0,E('controlWarnings("nm",groupRuns("nm").rs).join(" | ")'));
+    E(`S.runs[0].par=140; S.runs[1].T=27.3;`);
+    const wn=E('controlWarnings("nm",groupRuns("nm").rs)');
+    check('…and are flagged when PAR and temperature were not held constant',wn.some(w=>/PAR/.test(w))&&wn.some(w=>/Temperature/.test(w)),wn.join(' | '));
+    // ---------- guide ----------
+    E('S.runs=[];S.nextId=1;S.guides={};setGuide("action");');
+    E('S.bathOn=true;S.setT=25;S.nah=4;S.C=1;S.room=false;S.T=25;S.led="blue";S.dist=15;S.sprig=0;');
+    E(`(()=>{ for(let b=0;b<=100;b++){ S.bright=b; if(Math.abs(readMeters(true).par-100)<=1) break; } })()`);
+    E('gstore().items={a1:{attempted:true},a2:{attempted:true},a3:{attempted:true}}; refreshGuide(true);');
+    check('guide: set-up task ticks itself when the bench is ready',E('itemDone(findItem("t1"))')===true);
+    check('guide: PAR task ticks at 100 ± 5',E('itemDone(findItem("t2"))')===true,E('readMeters(true).par'));
+    E('gstore().items.a4={attempted:true}; gstore().items.a5={attempted:true}; changed(); fastForward(200); startAuto(); fastForward(61); refreshGuide(true);');
+    check('guide: a settled 60 s count ticks the one-count task',E('itemDone(findItem("t3"))')===true);
+    const R=E('rateOf(refOne())');
+    check('guide: worked rate check accepts 60N/t',E(`findItem("a6").check(${R}).ok`)===true&&E(`findItem("a6").check(${R*1.2}).ok`)===false);
+    E('gstore().items.a6={attempted:true}; for(let i=0;i<4;i++){ startAuto(); fastForward(61); } refreshGuide(true);');
+    const f5=E('refFive().map(rateOf)'); const mm=f5.reduce((a,b)=>a+b,0)/5, sd=Math.sqrt(f5.reduce((a,b)=>a+(b-mm)**2,0)/4);
+    check('guide: five counts tick the repeat task, and the mean and SD checks use them',E('itemDone(findItem("t4"))')===true&&E(`findItem("a7").check(${mm}).ok`)===true&&E(`findItem("a8").check(${sd}).ok`)===true,`mean ${mm.toFixed(2)} sd ${sd.toFixed(2)}`);
+    // ---------- predict, then fire ----------
+    E('S.chal=null; newChallenge();');
+    const c=E('S.chal');
+    check('Predict: a challenge is set with a clear answer',!!c&&[0,1,2].includes(c.ans));
+    E('S.chal.chosen=S.chal.ans; fireChallenge();');
+    check('Predict: FIRE makes five counts of each set-up and shows the worked solution',E('S.chal.state')==='done'&&E('S.chal.res.a.length')===5&&/Equation/.test(E('document.getElementById("chal").innerHTML')));
+    // ---------- bench tour ----------
+    check('test mode: the tour does not start by itself',E('TOUR')===null);
+    E('startTour()');
+    check('tour: the bench starts bare',E('isBuilt("lamp")')===false&&E('isBuilt("counter")')===false);
+    E('tourGo(1)'); E('tourGo(1)');
+    check('tour: Next is blocked until the module is placed',E('TOUR.i')===1);
+    E('tourPlace("lamp"); draw();');
+    check('tour: placing a module builds it',E('isBuilt("lamp")')===true);
+    E('setLed("red"); tourTick();');
+    check('tour: the Try it ticks when done',/tc-try ok/.test(E('document.getElementById("tourCard").innerHTML')));
+    E('endTour()');
+    check('tour: Skip or Finish builds the whole bench',E('["clock","lamp","sol","bath","meters","counter"].every(isBuilt)'));
+    // ---------- help sheet ----------
+    check('test mode: the help sheet does not open by itself',E('document.getElementById("helpDlg").open')===false);
+    E('openHelp()');
+    check('openHelp() opens the help sheet with 11 sections',E('document.getElementById("helpDlg").open')===true&&E('document.querySelectorAll("#helpDlg .help-body section").length')===11);
+    E('closeHelp()');
+    check('closeHelp() closes it',E('document.getElementById("helpDlg").open')===false);
+    E('draw()');
+  }catch(e){ check('test run completed',false,e.stack||e.message); }
+  check('no script errors',(W.__errors||[]).length===0,(W.__errors||[]).join(' | '));
+  const out=document.getElementById('out'); const failed=results.filter(r=>!r.ok).length;
+  out.innerHTML=results.map(r=>`<span class="${r.ok?'p':'f'}">${r.ok?'PASS':'FAIL'}</span>  ${r.name}${r.detail?'  · '+r.detail:''}`).join('\n');
+  document.getElementById('sum').textContent=`${results.length-failed}/${results.length} passed`;
+  window.TEST_RESULTS=results; window.TEST_DONE=true;
+}
+window.addEventListener('load',()=>run());
+</script>
+</body>
+</html>
